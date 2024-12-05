@@ -27,19 +27,48 @@ export const API_CONFIG = {
   },
   geneExpression: {
     geo: {
-      baseUrl: 'https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi',
+      baseUrl: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils',
       endpoints: {
-        search: '/search',
-        fetch: '/fetch',
-        analyze: '/analyze'
+        search: '/esearch.fcgi',
+        fetch: '/efetch.fcgi',
+        summary: '/esummary.fcgi',
+        link: '/elink.fcgi'
+      },
+      params: {
+        db: 'gds',
+        retmode: 'json',
+        retmax: 100,
+        api_key: import.meta.env.VITE_NCBI_API_KEY || '' // Using Vite environment variable
       }
     },
     arrayExpress: {
-      baseUrl: 'https://www.ebi.ac.uk/arrayexpress/json',
+      baseUrl: '/api/arrayexpress',
       endpoints: {
         query: '/query',
-        download: '/download'
+        files: '/files',
+        experiments: '/experiments',
+        protocols: '/protocols'
+      },
+      fallbackUrl: 'https://www.ebi.ac.uk/arrayexpress/json',
+      params: {
+        pageSize: 100,
+        format: 'json'
       }
+    },
+    proxy: {
+      enabled: true,
+      timeout: 30000,
+      retries: 3,
+      backoff: {
+        initial: 1000,
+        max: 10000,
+        factor: 2
+      }
+    },
+    cache: {
+      ttl: 3600000, // 1 hour
+      maxSize: 100, // Maximum number of cached queries
+      cleanupInterval: 300000 // 5 minutes
     }
   }
 } as const;

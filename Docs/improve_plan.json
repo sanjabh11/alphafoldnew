@@ -190,7 +190,8 @@
                 "max_size": "2GB"
             }
         },
-        "invalidation_rules": {
+        "invalidat
+        ion_rules": {
             "data_update": true,
             "version_change": true,
             "user_request": true
