@@ -1,0 +1,80 @@
+@import './components/LoadingSpinner.css';
+@import './components/ErrorMessage.css';
+@import './components/AnnotationViewer.css';
+@import './theme.css';
+
+.sequence-viewer {
+  background-color: #ffffff;
+}
+
+.amino-acid {
+  display: inline-block;
+  padding: 0 1px;
+  font-family: monospace;
+}
+
+.amino-acid:hover {
+  background-color: #e5e7eb;
+  border-radius: 2px;
+}
+
+.sequence-line {
+  white-space: pre;
+  border-radius: 4px;
+  padding: 2px 4px;
+}
+
+.sequence-container {
+  max-height: 400px;
+  overflow-y: auto;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  padding: 8px;
+}
+
+.sequence-position {
+  font-family: monospace;
+  user-select: none;
+}
+
+.blast-search {
+  background-color: white;
+}
+
+.blast-search button:disabled {
+  cursor: not-allowed;
+  opacity: 0.5;
+}
+
+.blast-search button:hover:not(:disabled) {
+  transform: translateY(-1px);
+  transition: transform 0.2s;
+}
+
+.protein-viewer {
+  touch-action: none; /* Prevents browser handling of touch events */
+}
+
+.annotation-viewer {
+  padding: 20px;
+  max-width: 800px;
+  margin: 0 auto;
+}
+
+.annotation-card {
+  background-color: #f5f5f5;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  padding: 15px;
+  margin-bottom: 15px;
+}
+
+.annotation-card h3 {
+  margin: 0 0 10px 0;
+  color: #333;
+}
+
+.annotation-card p {
+  margin: 5px 0;
+  color: #666;
+} 

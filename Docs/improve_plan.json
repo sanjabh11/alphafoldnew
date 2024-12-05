@@ -1,0 +1,237 @@
+{
+    "metadata": {
+        "version": "3.5",
+        "last_updated": "2024-12-04",
+        "api_version": "2.1",
+        "schema_version": "2024.2"
+    },
+    "api_integration": {
+        "data_sources": {
+            "alphafold3": {
+                "base_url": "https://alphafold.api.example.com/v3",
+                "endpoints": {
+                    "structure_prediction": "/predict",
+                    "structure_analysis": "/analyze",
+                    "batch_processing": "/batch"
+                },
+                "rate_limits": {
+                    "requests_per_minute": 60,
+                    "concurrent_requests": 10
+                }
+            },
+            "gene_expression": {
+                "geo": {
+                    "base_url": "https://www.ncbi.nlm.nih.gov/geo/query/acc.cgi",
+                    "endpoints": {
+                        "search": "/search",
+                        "fetch": "/fetch",
+                        "analyze": "/analyze"
+                    }
+                },
+                "arrayexpress": {
+                    "base_url": "https://www.ebi.ac.uk/arrayexpress/json",
+                    "endpoints": {
+                        "query": "/query",
+                        "download": "/download"
+                    }
+                }
+            },
+            "protein_data": {
+                "uniprot": {
+                    "base_url": "https://rest.uniprot.org/uniprotkb",
+                    "endpoints": {
+                        "search": "/search",
+                        "fetch": "/fetch"
+                    }
+                },
+                "pdb": {
+                    "base_url": "https://data.rcsb.org/rest/v1",
+                    "endpoints": {
+                        "structure": "/structure",
+                        "annotations": "/annotations"
+                    }
+                }
+            }
+        },
+        "data_processing": {
+            "expression_analysis": {
+                "methods": [
+                    "differential_expression",
+                    "tissue_specificity",
+                    "temporal_analysis"
+                ],
+                "normalization": [
+                    "quantile",
+                    "rma",
+                    "tpm"
+                ],
+                "statistical_tests": [
+                    "t_test",
+                    "anova",
+                    "deseq2"
+                ]
+            },
+            "structure_analysis": {
+                "prediction_modes": [
+                    "fast",
+                    "accurate"
+                ],
+                "analysis_features": [
+                    "domain_prediction",
+                    "binding_sites",
+                    "stability_analysis"
+                ],
+                "visualization_options": [
+                    "cartoon",
+                    "surface",
+                    "ribbon"
+                ]
+            }
+        }
+    },
+    "user_interface": {
+        "search_interface": {
+            "quick_search": {
+                "fields": [
+                    "gene_id",
+                    "protein_name",
+                    "organism"
+                ],
+                "autocomplete": true,
+                "history": true
+            },
+            "advanced_search": {
+                "filters": [
+                    "expression_level",
+                    "tissue_type",
+                    "structure_confidence",
+                    "organism"
+                ],
+                "date_range": true,
+                "custom_queries": true
+            }
+        },
+        "results_display": {
+            "summary_view": {
+                "components": [
+                    "gene_info",
+                    "expression_summary",
+                    "structure_preview"
+                ],
+                "quick_actions": [
+                    "download",
+                    "share",
+                    "analyze"
+                ]
+            },
+            "detailed_view": {
+                "tabs": [
+                    "expression_analysis",
+                    "structure_viewer",
+                    "pathway_analysis",
+                    "literature_references"
+                ],
+                "export_options": [
+                    "csv",
+                    "json",
+                    "pdf"
+                ]
+            },
+            "visualization": {
+                "expression_plots": [
+                    "heatmap",
+                    "violin_plot",
+                    "box_plot"
+                ],
+                "structure_viewer": {
+                    "controls": [
+                        "rotate",
+                        "zoom",
+                        "highlight"
+                    ],
+                    "display_modes": [
+                        "cartoon",
+                        "surface",
+                        "ribbon"
+                    ]
+                }
+            }
+        },
+        "analysis_tools": {
+            "expression": {
+                "differential_analysis": true,
+                "pathway_enrichment": true,
+                "correlation_analysis": true
+            },
+            "structure": {
+                "domain_analysis": true,
+                "binding_site_prediction": true,
+                "stability_assessment": true
+            },
+            "batch_processing": {
+                "max_genes": 100,
+                "parallel_processing": true,
+                "email_notification": true
+            }
+        }
+    },
+    "caching": {
+        "strategies": {
+            "api_responses": {
+                "ttl": 3600,
+                "max_size": "1GB"
+            },
+            "search_results": {
+                "ttl": 1800,
+                "max_size": "500MB"
+            },
+            "visualizations": {
+                "ttl": 7200,
+                "max_size": "2GB"
+            }
+        },
+        "invalidation_rules": {
+            "data_update": true,
+            "version_change": true,
+            "user_request": true
+        }
+    },
+    "error_handling": {
+        "api_errors": {
+            "retry_strategy": {
+                "max_attempts": 3,
+                "backoff": "exponential"
+            },
+            "fallback_options": {
+                "cached_data": true,
+                "partial_results": true
+            }
+        },
+        "user_feedback": {
+            "error_messages": {
+                "user_friendly": true,
+                "technical_details": "optional"
+            },
+            "recovery_suggestions": true
+        }
+    },
+    "performance": {
+        "optimization": {
+            "parallel_requests": true,
+            "request_batching": true,
+            "response_compression": true
+        },
+        "monitoring": {
+            "metrics": [
+                "response_time",
+                "success_rate",
+                "cache_hits"
+            ],
+            "alerts": {
+                "slow_responses": true,
+                "error_rates": true,
+                "api_availability": true
+            }
+        }
+    }
+}

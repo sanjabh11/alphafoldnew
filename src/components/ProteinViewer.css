@@ -1,0 +1,82 @@
+.control-button {
+  padding: 8px 16px;
+  background: #3b82f6; /* Blue background */
+  color: white; /* White text */
+  border: none; /* No border */
+  border-radius: 4px; /* Rounded corners */
+  cursor: pointer; /* Pointer cursor on hover */
+  margin: 4px; /* Margin around the button */
+}
+
+.control-button:hover {
+  background: #2563eb; /* Darker blue on hover */
+}
+
+.absolute {
+  position: absolute;
+}
+
+.bg-white {
+  background-color: white;
+}
+
+.bg-gray-50 {
+  background-color: #f9fafb; /* Light gray background */
+}
+
+.rounded-lg {
+  border-radius: 0.5rem; /* Rounded corners */
+}
+
+.overflow-hidden {
+  overflow: hidden; /* Hide overflow */
+}
+
+.shadow {
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.1); /* Light shadow */
+}
+
+.space-y-2 > * + * {
+  margin-top: 0.5rem; /* Space between elements */
+}
+
+.flex {
+  display: flex; /* Flexbox layout */
+}
+
+.gap-2 {
+  gap: 0.5rem; /* Gap between flex items */
+}
+
+.text-sm {
+  font-size: 0.875rem; /* Small text */
+}
+
+.text-lg {
+  font-size: 1.125rem; /* Large text */
+}
+
+.font-semibold {
+  font-weight: 600; /* Semi-bold text */
+}
+
+.text-red-500 {
+  color: #f56565; /* Red color */
+}
+
+.text-blue-500 {
+  color: #3b82f6; /* Blue color */
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite; /* Spin animation */
+}
+
+@keyframes spin {
+  0% {
+    transform: rotate(0deg);
+  }
+  100% {
+    transform: rotate(360deg);
+  }
+}

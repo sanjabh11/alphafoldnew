@@ -1,0 +1,59 @@
+/* src/styles/components/SequenceViewer.css */
+.sequence-viewer {
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .sequence-container {
+    overflow-x: auto;
+    white-space: nowrap;
+  }
+  
+  .sequence-line {
+    padding: 2px 0;
+  }
+  
+  .sequence-char {
+    display: inline-block;
+    padding: 0 1px;
+  }
+  
+  .sequence-text {
+    letter-spacing: 1px;
+  }
+  
+  .line-number {
+    font-size: 0.8em;
+    color: #666;
+  }
+  
+  .search-container input {
+    transition: border-color 0.2s;
+  }
+  
+  .search-container input:focus {
+    border-color: #3b82f6;
+    outline: none;
+  }
+  .sequence-line {
+    font-family: monospace;
+    padding: 4px 0;
+    display: flex;
+    align-items: center;
+  }
+  
+  .sequence-number {
+    color: #666;
+    width: 4rem;
+    text-align: right;
+    padding-right: 1rem;
+  }
+  
+  .sequence-text {
+    flex: 1;
+    letter-spacing: 0.1em;
+  }
+  
+  .sequence-text.highlighted {
+    background-color: #ffd700;
+  }

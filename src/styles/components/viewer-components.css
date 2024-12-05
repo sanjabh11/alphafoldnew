@@ -1,0 +1,110 @@
+/* src/styles/components/viewer-components.css */
+/* Style Selector */
+.style-selector {
+    background: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .style-group {
+    margin-bottom: 10px;
+  }
+  
+  .style-group label {
+    display: block;
+    margin-bottom: 5px;
+    font-weight: 500;
+  }
+  
+  .style-group select,
+  .style-group input[type="range"] {
+    width: 100%;
+    padding: 5px;
+    border-radius: 4px;
+    border: 1px solid var(--border-color);
+  }
+  
+  /* Chain Controls */
+  .chain-controls {
+    background: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .chain-item {
+    margin-bottom: 10px;
+    padding: 8px;
+    border: 1px solid var(--border-color);
+    border-radius: 4px;
+  }
+  
+  .chain-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  .chain-options {
+    margin-top: 5px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  
+  /* Sequence Navigator */
+  .sequence-navigator {
+    background: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .sequence-viewport {
+    display: flex;
+    overflow-x: auto;
+    font-family: monospace;
+    padding: 10px;
+    background: var(--primary-bg);
+    border-radius: 4px;
+  }
+  
+  .residue {
+    padding: 2px 4px;
+    cursor: pointer;
+    user-select: none;
+  }
+  
+  .residue.selected {
+    background: var(--accent-color);
+    color: white;
+    border-radius: 2px;
+  }
+  
+  /* Structure Download */
+  .structure-download {
+    background: var(--secondary-bg);
+    padding: 15px;
+    border-radius: 8px;
+    margin-bottom: 15px;
+  }
+  
+  .download-options {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+  
+  .download-options button {
+    padding: 8px 16px;
+    border-radius: 4px;
+    background: var(--accent-color);
+    color: white;
+    border: none;
+    cursor: pointer;
+  }
+  
+  .download-options button:hover {
+    opacity: 0.9;
+  }

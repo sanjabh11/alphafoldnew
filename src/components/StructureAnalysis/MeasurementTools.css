@@ -1,0 +1,84 @@
+/* src/components/StructureAnalysis/MeasurementTools.css */
+.measurement-tools {
+    position: absolute;
+    top: 20px;
+    left: 20px;
+    background: white;
+    padding: 16px;
+    border-radius: 8px;
+    box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    z-index: 1000;
+    width: 300px;
+  }
+  
+  .measurement-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+  }
+  
+  .measurement-select {
+    padding: 8px;
+    border: 1px solid #e2e8f0;
+    border-radius: 6px;
+    background: white;
+  }
+  
+  .measurement-toggle {
+    padding: 8px;
+    border: none;
+    border-radius: 6px;
+    background: #3b82f6;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.2s;
+  }
+  
+  .measurement-toggle:hover {
+    background: #2563eb;
+  }
+  
+  .measurement-toggle.active {
+    background: #dc2626;
+  }
+  
+  .measurement-toggle.active:hover {
+    background: #b91c1c;
+  }
+  
+  .measurement-status {
+    padding: 8px;
+    background: #f8fafc;
+    border-radius: 4px;
+    font-size: 14px;
+    color: #64748b;
+  }
+  
+  .measurements-list {
+    margin-top: 16px;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+  
+  .measurement-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px;
+    background: #f8fafc;
+    border-radius: 4px;
+    margin-bottom: 4px;
+  }
+  
+  .delete-measurement {
+    padding: 2px 6px;
+    background: #fee2e2;
+    color: #dc2626;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+  }
+  
+  .delete-measurement:hover {
+    background: #fecaca;
+  }

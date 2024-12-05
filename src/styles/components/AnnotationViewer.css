@@ -1,0 +1,131 @@
+/* src/styles/components/AnnotationViewer.css */
+.annotation-viewer {
+    padding: 20px;
+    max-width: 800px;
+    margin: 0 auto;
+  }
+  
+  .search-container {
+    display: flex;
+    gap: 10px;
+    margin-bottom: 20px;
+  }
+  
+  .search-input {
+    flex: 1;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+  }
+  
+  .group-filter {
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    min-width: 150px;
+  }
+  
+  .annotation-group {
+    background: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+    margin-bottom: 8px;
+    transition: all 0.2s;
+  }
+  
+  .annotation-group:hover {
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+  }
+  
+  .group-header {
+    background: #f8f9fa;
+    padding: 12px 16px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+  }
+  
+  .group-header:hover {
+    background-color: #f3f4f6;
+  }
+  
+  .group-header h3 {
+    font-size: 14px;
+    margin: 0;
+    color: #333;
+  }
+  
+  .expand-icon {
+    font-size: 12px;
+    transition: transform 0.2s;
+  }
+  
+  .expand-icon.expanded {
+    transform: rotate(180deg);
+  }
+  
+  .annotation-card {
+    padding: 12px 16px;
+    border-top: 1px solid #eee;
+  }
+  
+  .annotation-card:hover {
+    background-color: #f9fafb;
+  }
+  
+  .position-indicator {
+    margin: 8px 0;
+  }
+  
+  .position-bar {
+    height: 4px;
+    background: #eee;
+    border-radius: 2px;
+    position: relative;
+    margin: 4px 0;
+  }
+  
+  .position-marker {
+    position: absolute;
+    height: 100%;
+    background: #2196f3;
+    border-radius: 2px;
+  }
+  
+  .position-text {
+    font-size: 13px;
+    color: #666;
+  }
+  
+  .description {
+    margin: 8px 0;
+    color: #333;
+  }
+  
+  .evidence {
+    font-size: 13px;
+    color: #666;
+  }
+  
+  .search-container input,
+  .search-container select {
+    transition: border-color 0.2s;
+  }
+  
+  .search-container input:focus,
+  .search-container select:focus {
+    border-color: #3b82f6;
+    outline: none;
+  }
+  
+  @media (max-width: 768px) {
+    .search-container {
+      flex-direction: column;
+    }
+    
+    .annotation-viewer {
+      padding: 10px;
+    }
+  }

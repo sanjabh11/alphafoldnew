@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --protein-viewer-bg: theme('colors.white');
+  --protein-viewer-text: theme('colors.gray.800');
+}
+
+.dark {
+  --protein-viewer-bg: theme('colors.gray.900');
+  --protein-viewer-text: theme('colors.gray.100');
+}
+
+body {
+  @apply antialiased;
+}
+
+.protein-viewer {
+  @apply bg-protein-bg-light dark:bg-protein-bg-dark 
+         text-protein-text-light dark:text-protein-text-dark 
+         rounded-lg shadow-lg p-4 transition-colors duration-200;
+}
