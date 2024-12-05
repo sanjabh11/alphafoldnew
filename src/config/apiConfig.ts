@@ -26,49 +26,71 @@ export const API_CONFIG = {
     }
   },
   geneExpression: {
+    baseUrl: '/api/gene-expression',
+    endpoints: {
+      query: '/query',
+      protein: '/protein/:id/query',
+      search: '/search',
+      details: '/details/:id',
+      batch: '/batch'
+    },
+    params: {
+      format: 'json',
+      pageSize: 50
+    },
+    rateLimits: {
+      requestsPerMinute: 60,
+      maxBatchSize: 100,
+      retryDelay: 2000
+    },
     geo: {
       baseUrl: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils',
       endpoints: {
         search: '/esearch.fcgi',
         fetch: '/efetch.fcgi',
         summary: '/esummary.fcgi',
-        link: '/elink.fcgi'
+        link: '/elink.fcgi',
+        batch: '/epost.fcgi',
+        history: '/ehistory.fcgi'
       },
       params: {
         db: 'gds',
         retmode: 'json',
         retmax: 100,
-        api_key: import.meta.env.VITE_NCBI_API_KEY || '' // Using Vite environment variable
+        api_key: import.meta.env.VITE_NCBI_API_KEY || '',
+        usehistory: 'y'
+      },
+      rateLimits: {
+        requestsPerSecond: 3,
+        maxBatchSize: 200,
+        retryDelay: 1000
+      },
+      cache: {
+        ttl: parseInt(import.meta.env.VITE_API_CACHE_TTL) || 3600000,
+        maxEntries: 1000
       }
     },
     arrayExpress: {
-      baseUrl: '/api/arrayexpress',
+      baseUrl: 'https://www.ebi.ac.uk/arrayexpress/json/v3',
       endpoints: {
-        query: '/query',
-        files: '/files',
         experiments: '/experiments',
-        protocols: '/protocols'
+        files: '/files',
+        protocols: '/protocols',
+        samples: '/samples'
       },
-      fallbackUrl: 'https://www.ebi.ac.uk/arrayexpress/json',
       params: {
-        pageSize: 100,
-        format: 'json'
+        format: 'json',
+        pageSize: 50
+      },
+      rateLimits: {
+        requestsPerMinute: 30,
+        maxBatchSize: 50,
+        retryDelay: 3000
+      },
+      cache: {
+        ttl: parseInt(import.meta.env.VITE_API_CACHE_TTL) || 3600000,
+        maxEntries: 500
       }
-    },
-    proxy: {
-      enabled: true,
-      timeout: 30000,
-      retries: 3,
-      backoff: {
-        initial: 1000,
-        max: 10000,
-        factor: 2
-      }
-    },
-    cache: {
-      ttl: 3600000, // 1 hour
-      maxSize: 100, // Maximum number of cached queries
-      cleanupInterval: 300000 // 5 minutes
     }
   }
 } as const;
