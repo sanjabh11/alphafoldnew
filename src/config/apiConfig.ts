@@ -26,70 +26,27 @@ export const API_CONFIG = {
     }
   },
   geneExpression: {
-    baseUrl: '/api/gene-expression',
-    endpoints: {
-      query: '/query',
-      protein: '/protein/:id/query',
-      search: '/search',
-      details: '/details/:id',
-      batch: '/batch'
-    },
-    params: {
-      format: 'json',
-      pageSize: 50
-    },
-    rateLimits: {
-      requestsPerMinute: 60,
-      maxBatchSize: 100,
-      retryDelay: 2000
-    },
     geo: {
-      baseUrl: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils',
+      baseUrl: import.meta.env.VITE_GEO_API_URL || 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils',
       endpoints: {
         search: '/esearch.fcgi',
-        fetch: '/efetch.fcgi',
         summary: '/esummary.fcgi',
-        link: '/elink.fcgi',
-        batch: '/epost.fcgi',
-        history: '/ehistory.fcgi'
+        fetch: '/efetch.fcgi'
       },
       params: {
-        db: 'gds',
         retmode: 'json',
-        retmax: 100,
-        api_key: import.meta.env.VITE_NCBI_API_KEY || '',
         usehistory: 'y'
-      },
-      rateLimits: {
-        requestsPerSecond: 3,
-        maxBatchSize: 200,
-        retryDelay: 1000
-      },
-      cache: {
-        ttl: parseInt(import.meta.env.VITE_API_CACHE_TTL) || 3600000,
-        maxEntries: 1000
       }
     },
     arrayExpress: {
-      baseUrl: 'https://www.ebi.ac.uk/arrayexpress/json/v3',
+      baseUrl: import.meta.env.VITE_ARRAYEXPRESS_API_URL || 'https://www.ebi.ac.uk/arrayexpress',
       endpoints: {
-        experiments: '/experiments',
-        files: '/files',
-        protocols: '/protocols',
-        samples: '/samples'
+        search: '/json/v3/experiments',
+        fetch: '/json/v3/experiments'
       },
       params: {
-        format: 'json',
-        pageSize: 50
-      },
-      rateLimits: {
-        requestsPerMinute: 30,
-        maxBatchSize: 50,
-        retryDelay: 3000
-      },
-      cache: {
-        ttl: parseInt(import.meta.env.VITE_API_CACHE_TTL) || 3600000,
-        maxEntries: 500
+        pageSize: 50,
+        raw: true
       }
     }
   }

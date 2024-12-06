@@ -1,138 +1,133 @@
+// src/components/ExpressionAnalysis/ExpressionAnalysisPanel.tsx
 import React, { useState, useCallback } from 'react';
-import ExpressionViewer from './ExpressionViewer';
-import { geneExpressionService, ExpressionQuery, ExpressionData } from '../../services/geneExpressionService';
-import { ProcessedData } from '../../utils/dataProcessing';
+import { geneExpressionService } from '../../services/geneExpressionService';
 
-interface ExpressionAnalysisPanelProps {
-  geneId?: string;
-  onDataProcessed?: (data: ProcessedData) => void;
-  className?: string;
-}
-
-const ExpressionAnalysisPanel: React.FC<ExpressionAnalysisPanelProps> = ({
-  geneId: initialGeneId,
-  onDataProcessed,
-  className = ''
-}) => {
+const ExpressionAnalysisPanel: React.FC = () => {
+  const [geneId, setGeneId] = useState('');
+  const [organism, setOrganism] = useState('');
+  const [tissueType, setTissueType] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [expressionData, setExpressionData] = useState<ExpressionData[]>([]);
-  const [searchAttempted, setSearchAttempted] = useState(false);
-  const [query, setQuery] = useState<ExpressionQuery>({
-    geneId: initialGeneId || '',
-    organism: '',
-    tissueType: '',
-    experimentType: ''
-  });
+  const [data, setData] = useState<any>(null);
 
-  const handleSearch = useCallback(async () => {
-    if (!query.geneId) {
-      setError('Please enter a gene ID');
-      return;
-    }
-
+  const handleSearch = async (e: React.FormEvent) => {
+    e.preventDefault();
     setIsLoading(true);
     setError(null);
-    setSearchAttempted(true);
-    console.log('Starting search with query:', query);
+    setData(null);
 
     try {
-      const { geoResults, arrayExpressResults, error: searchError } = await geneExpressionService.searchGene(query);
-      
-      if (searchError) {
-        console.error('Search error:', searchError);
-        setError(searchError);
+      console.log('Starting search for:', { geneId, organism, tissueType });
+
+      const results = await geneExpressionService.searchGene({
+        geneId: geneId.toUpperCase(),
+        organism,
+        tissueType
+      });
+
+      console.log('Search results:', results);
+
+      if (results.error) {
+        if (results.error.includes('API key')) {
+          setError('NCBI API key is missing. Please configure your environment variables.');
+        } else {
+          setError(results.error);
+        }
         return;
       }
 
-      const allResults = [...geoResults, ...arrayExpressResults];
-      console.log('Combined results:', allResults);
-
-      if (allResults.length === 0) {
+      if (results.geoResults.length === 0 && results.arrayExpressResults.length === 0) {
         setError('No expression data found for the specified criteria');
       } else {
-        setExpressionData(allResults);
+        setData({
+          geo: results.geoResults,
+          arrayExpress: results.arrayExpressResults
+        });
       }
     } catch (err) {
       console.error('Search failed:', err);
-      setError(err instanceof Error ? err.message : 'Failed to fetch expression data');
+      if (err instanceof Error) {
+        setError(err.message);
+      } else {
+        setError('Failed to fetch expression data');
+      }
     } finally {
       setIsLoading(false);
     }
-  }, [query]);
-
-  const handleQueryChange = useCallback((field: keyof ExpressionQuery, value: string) => {
-    setQuery(prev => ({ ...prev, [field]: value }));
-    setError(null);
-  }, []);
+  };
 
   return (
-    <div className={`expression-analysis-panel p-4 ${className}`}>
-      <div className="mb-4 space-y-2">
-        <h2 className="text-xl font-bold">Gene Expression Analysis</h2>
-        
-        <div className="flex flex-col space-y-2 sm:flex-row sm:space-x-2 sm:space-y-0">
+    <div className="p-4">
+      <h2 className="text-xl font-bold mb-4">Gene Expression Analysis</h2>
+
+      <form onSubmit={handleSearch} className="space-y-4">
+        <div>
           <input
             type="text"
-            placeholder="Gene ID (e.g., ARHGAP36)"
-            className="border rounded px-2 py-1 flex-1"
-            value={query.geneId}
-            onChange={(e) => handleQueryChange('geneId', e.target.value)}
+            value={geneId}
+            onChange={(e) => setGeneId(e.target.value)}
+            placeholder="Gene ID (e.g., GAPDH)"
+            className="w-full p-2 border rounded"
+            required
           />
-          <input
-            type="text"
-            placeholder="Organism (e.g., human)"
-            className="border rounded px-2 py-1"
-            value={query.organism}
-            onChange={(e) => handleQueryChange('organism', e.target.value)}
-          />
-          <input
-            type="text"
-            placeholder="Tissue Type"
-            className="border rounded px-2 py-1"
-            value={query.tissueType}
-            onChange={(e) => handleQueryChange('tissueType', e.target.value)}
-          />
-          <button
-            className="px-4 py-1 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed"
-            onClick={handleSearch}
-            disabled={isLoading || !query.geneId}
-          >
-            {isLoading ? (
-              <span className="flex items-center">
-                <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                Searching...
-              </span>
-            ) : 'Search'}
-          </button>
         </div>
 
-        {error && (
-          <div className="text-red-500 bg-red-50 border border-red-200 rounded p-2">
-            {error}
-          </div>
-        )}
+        <div>
+          <input
+            type="text"
+            value={organism}
+            onChange={(e) => setOrganism(e.target.value)}
+            placeholder="Organism (e.g., human)"
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-        {!error && searchAttempted && expressionData.length === 0 && !isLoading && (
-          <div className="text-gray-500 bg-gray-50 border border-gray-200 rounded p-2">
-            No expression data found. Try adjusting your search criteria.
-          </div>
-        )}
-      </div>
+        <div>
+          <input
+            type="text"
+            value={tissueType}
+            onChange={(e) => setTissueType(e.target.value)}
+            placeholder="Tissue Type"
+            className="w-full p-2 border rounded"
+          />
+        </div>
 
-      {expressionData.length > 0 && (
-        <ExpressionViewer
-          data={expressionData}
-          onAnalysisComplete={onDataProcessed}
-        />
+        <button
+          type="submit"
+          disabled={isLoading || !geneId}
+          className="w-full p-2 bg-blue-500 text-white rounded hover:bg-blue-600 disabled:opacity-50"
+        >
+          {isLoading ? 'Searching...' : 'Search'}
+        </button>
+      </form>
+
+      {isLoading && (
+        <div className="mt-4 text-center">
+          Searching for expression data...
+        </div>
       )}
 
-      {!error && !searchAttempted && !isLoading && (
-        <div className="text-gray-500 text-center py-8">
-          Enter a gene ID and click Search to view expression data.
+      {error && (
+        <div className="mt-4 text-red-500">
+          {error}
+        </div>
+      )}
+
+      {data && (
+        <div className="mt-4">
+          <h3 className="text-lg font-semibold">Results</h3>
+          {data.geo.length > 0 && (
+            <div className="mt-2">
+              <h4>GEO Data ({data.geo.length} results)</h4>
+              {/* Add visualization of GEO data */}
+            </div>
+          )}
+          {data.arrayExpress.length > 0 && (
+            <div className="mt-2">
+              <h4>ArrayExpress Data ({data.arrayExpress.length} results)</h4>
+              {/* Add visualization of ArrayExpress data */}
+            </div>
+          )}
         </div>
       )}
     </div>
