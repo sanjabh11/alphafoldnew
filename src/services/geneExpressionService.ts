@@ -49,6 +49,28 @@ interface ArrayExpressExperiment {
   experimentalFactors?: string[];
 }
 
+export interface PathwayAnalysisResult {
+  pathwayId: string;
+  name: string;
+  pValue: number;
+  foldChange: number;
+  genes: string[];
+  source: string;
+}
+
+export interface CoexpressionNetwork {
+  nodes: Array<{
+    id: string;
+    name: string;
+    score: number;
+  }>;
+  edges: Array<{
+    source: string;
+    target: string;
+    correlation: number;
+  }>;
+}
+
 export class GeneExpressionService {
   private axiosInstance: AxiosInstance;
   private readonly MAX_RETRIES = 3;
@@ -368,6 +390,74 @@ export class GeneExpressionService {
       min: sorted[0],
       max: sorted[sorted.length - 1]
     };
+  }
+
+  async analyzePathways(geneIds: string[]): Promise<PathwayAnalysisResult[]> {
+    try {
+      // Using local browser storage for caching results
+      const cacheKey = `pathway_${geneIds.sort().join('_')}`;
+      const cachedResult = localStorage.getItem(cacheKey);
+      
+      if (cachedResult) {
+        return JSON.parse(cachedResult);
+      }
+
+      const response = await this.axiosInstance.post(
+        `${this.geoConfig.baseUrl}${this.geoConfig.endpoints.search}`,
+        {
+          genes: geneIds,
+          organism: 'human', // default to human, can be made configurable
+        }
+      );
+
+      const results = response.data.map(pathway => ({
+        pathwayId: pathway.id,
+        name: pathway.name,
+        pValue: pathway.pValue,
+        foldChange: pathway.foldChange,
+        genes: pathway.genes,
+        source: pathway.source
+      }));
+
+      // Cache the results
+      localStorage.setItem(cacheKey, JSON.stringify(results));
+      return results;
+    } catch (error) {
+      console.error('Pathway analysis failed:', error);
+      throw new Error('Failed to analyze pathways');
+    }
+  }
+
+  async getCoexpressionNetwork(geneId: string, threshold: number = 0.7): Promise<CoexpressionNetwork> {
+    try {
+      const cacheKey = `coexpression_${geneId}_${threshold}`;
+      const cachedResult = localStorage.getItem(cacheKey);
+      
+      if (cachedResult) {
+        return JSON.parse(cachedResult);
+      }
+
+      const response = await this.axiosInstance.get(
+        `${this.geoConfig.baseUrl}${this.geoConfig.endpoints.search}`,
+        {
+          params: {
+            gene: geneId,
+            threshold: threshold
+          }
+        }
+      );
+
+      const network = {
+        nodes: response.data.nodes,
+        edges: response.data.edges
+      };
+
+      localStorage.setItem(cacheKey, JSON.stringify(network));
+      return network;
+    } catch (error) {
+      console.error('Coexpression network generation failed:', error);
+      throw new Error('Failed to generate coexpression network');
+    }
   }
 }
 
