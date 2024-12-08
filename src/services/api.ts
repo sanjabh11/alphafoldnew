@@ -16,7 +16,7 @@ interface AlphaFoldPrediction {
 }
 
 export class APIService {
-  private storage: StorageService;
+  private storage: StorageService | null = null;
   private worker: Worker;
   private CACHE_DURATION = 24 * 60 * 60 * 1000; // 24 hours
   private BASE_URL = 'https://rest.uniprot.org/uniprotkb';
@@ -24,7 +24,6 @@ export class APIService {
   private ALPHAFOLD_FILES_URL = 'https://alphafold.ebi.ac.uk/files';
 
   constructor() {
-    this.storage = new StorageService();
     this.worker = new Worker(
       new URL('../workers/structureProcessor.worker.ts', import.meta.url)
     );
@@ -32,8 +31,14 @@ export class APIService {
   }
 
   private async initializeServices() {
-    await this.storage.initDB();
-    this.setupWorkerListeners();
+    try {
+      this.storage = new StorageService();
+      await this.storage.initDB();
+      this.setupWorkerListeners();
+    } catch (error) {
+      console.warn('Failed to initialize storage, continuing without caching:', error);
+      this.storage = null;
+    }
   }
 
   private setupWorkerListeners() {
@@ -46,17 +51,19 @@ export class APIService {
   }
 
   async searchProteins(query: string): Promise<Protein[]> {
-    // Try cache first
-    try {
-      const cached = await this.storage.getSearchResults(query);
-      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        return cached.results;
+    // Try cache first if storage is available
+    if (this.storage) {
+      try {
+        const cached = await this.storage.getSearchResults(query);
+        if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+          return cached.results;
+        }
+      } catch (error) {
+        console.warn('Cache read failed:', error);
       }
-    } catch (error) {
-      console.warn('Cache read failed:', error);
     }
 
-    // Fetch from UniProt API if not in cache
+    // Fetch from UniProt API
     try {
       const response = await axios.get(`${this.BASE_URL}/search`, {
         params: {
@@ -73,7 +80,6 @@ export class APIService {
 
       // Transform UniProt response to our Protein format with proper null checks
       const proteins: Protein[] = response.data.results.map((item: any) => {
-        // Get protein name with fallbacks
         const proteinName = 
           item.proteinDescription?.recommendedName?.fullName?.value ||
           item.proteinDescription?.submittedName?.[0]?.fullName?.value ||
@@ -81,13 +87,11 @@ export class APIService {
           item.gene_names?.[0] ||
           'Unknown Protein';
 
-        // Get description with fallback
         const description = 
           item.proteinDescription?.recommendedName?.fullName?.value ||
           item.proteinDescription?.submittedName?.[0]?.fullName?.value ||
           '';
 
-        // Ensure we have a valid UniProt ID
         const uniprotId = item.primaryAccession || item.accession || item.id;
 
         return {
@@ -101,8 +105,14 @@ export class APIService {
         };
       });
 
-      // Save to cache
-      await this.storage.saveSearchResults(query, proteins);
+      // Save to cache if storage is available
+      if (this.storage) {
+        try {
+          await this.storage.saveSearchResults(query, proteins);
+        } catch (error) {
+          console.warn('Failed to cache search results:', error);
+        }
+      }
 
       return proteins;
     } catch (error) {
@@ -118,10 +128,16 @@ export class APIService {
 
   async getProteinStructure(uniprotId: string): Promise<any> {
     try {
-      // Check cache first
-      const cached = await this.storage.getStructure(uniprotId);
-      if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
-        return cached.data;
+      // Check cache first if storage is available
+      if (this.storage) {
+        try {
+          const cached = await this.storage.getStructure(uniprotId);
+          if (cached && Date.now() - cached.timestamp < this.CACHE_DURATION) {
+            return cached.data;
+          }
+        } catch (error) {
+          console.warn('Cache read failed:', error);
+        }
       }
 
       // First try to get metadata from AlphaFold API
@@ -186,8 +202,14 @@ export class APIService {
         }
       };
 
-      // Save to cache
-      await this.storage.saveStructure(uniprotId, data);
+      // Save to cache if storage is available
+      if (this.storage) {
+        try {
+          await this.storage.saveStructure(uniprotId, data);
+        } catch (error) {
+          console.warn('Failed to cache structure:', error);
+        }
+      }
 
       return data;
     } catch (error) {
