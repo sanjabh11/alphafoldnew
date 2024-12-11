@@ -1,3 +1,5 @@
+import { API_KEYS, getApiKeyHeader } from './apiKeys';
+
 export const API_CONFIG = {
   alphafold3: {
     baseUrl: 'https://api.alphafold.ebi.ac.uk/v3',
@@ -6,24 +8,34 @@ export const API_CONFIG = {
       status: '/status',
       result: '/result',
       analyze: '/analysis'
-    },
-    rateLimits: {
-      requestsPerMinute: 60,
-      concurrentRequests: 10
     }
+  },
+  ncbi: {
+    baseUrl: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils',
+    apiKey: import.meta.env.VITE_NCBI_API_KEY,
+    endpoints: {
+      search: '/esearch.fcgi',
+      fetch: '/efetch.fcgi',
+      summary: '/esummary.fcgi',
+      link: '/elink.fcgi'
+    },
+    headers: {
+      'api-key': import.meta.env.VITE_NCBI_API_KEY
+    }
+  },
+  arrayexpress: {
+    baseUrl: 'https://www.ebi.ac.uk/biostudies/api',
+    endpoints: {
+      search: '/v1/search',
+      details: '/v1/studies'
+    },
+    collection: 'ArrayExpress'
   },
   uniprot: {
-    baseUrl: 'https://rest.uniprot.org/uniprotkb',
+    baseUrl: 'https://rest.uniprot.org',
     endpoints: {
-      search: '/search',
-      fetch: '/fetch'
-    }
-  },
-  pdb: {
-    baseUrl: 'https://data.rcsb.org/rest/v1',
-    endpoints: {
-      structure: '/structure',
-      annotations: '/annotations'
+      search: '/uniprotkb/search',
+      entry: '/uniprotkb'
     }
   },
   geneExpression: {
@@ -34,42 +46,14 @@ export const API_CONFIG = {
         fetch: '/efetch.fcgi',
         summary: '/esummary.fcgi',
         link: '/elink.fcgi'
-      },
-      params: {
-        db: 'gds',
-        retmode: 'json',
-        retmax: 100,
-        api_key: import.meta.env.VITE_NCBI_API_KEY || '' // Using Vite environment variable
       }
     },
     arrayExpress: {
-      baseUrl: '/api/arrayexpress',
+      baseUrl: 'https://www.ebi.ac.uk/biostudies/api/v1',
       endpoints: {
-        query: '/query',
-        files: '/files',
-        experiments: '/experiments',
-        protocols: '/protocols'
-      },
-      fallbackUrl: 'https://www.ebi.ac.uk/arrayexpress/json',
-      params: {
-        pageSize: 100,
-        format: 'json'
+        search: '/studies',
+        files: '/studies'
       }
-    },
-    proxy: {
-      enabled: true,
-      timeout: 30000,
-      retries: 3,
-      backoff: {
-        initial: 1000,
-        max: 10000,
-        factor: 2
-      }
-    },
-    cache: {
-      ttl: 3600000, // 1 hour
-      maxSize: 100, // Maximum number of cached queries
-      cleanupInterval: 300000 // 5 minutes
     }
   }
 } as const;

@@ -9,6 +9,7 @@ import ThemeToggle from './components/ThemeToggle';
 import ProteinViewer from './components/ProteinViewer';
 import ExpressionAnalysisPanel from './components/ExpressionAnalysis/ExpressionAnalysisPanel';
 import { ProcessedData } from './utils/dataProcessing';
+import { DataExplorer } from './components/DataExplorer';
 
 const queryClient = new QueryClient();
 
@@ -90,6 +91,16 @@ export default function App() {
           </main>
         </div>
       </Router>
+      <div className="min-h-screen bg-gray-100">
+        <header className="bg-white shadow">
+          <div className="container mx-auto px-4 py-6">
+            <h1 className="text-2xl font-bold text-gray-900">AlphaFold Data Explorer</h1>
+          </div>
+        </header>
+        <main className="container mx-auto py-6">
+          <DataExplorer />
+        </main>
+      </div>
     </QueryClientProvider>
   );
 }

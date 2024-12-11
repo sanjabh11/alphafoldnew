@@ -18,5 +18,14 @@ export default defineConfig({
       'Cross-Origin-Opener-Policy': 'same-origin',
       'Cross-Origin-Embedder-Policy': 'require-corp',
     },
+    proxy: {
+      '/arrayexpress': {
+        target: 'https://www.ebi.ac.uk',
+        changeOrigin: true,
+        secure: false,
+        ws: true,
+        rewrite: (path) => path.replace(/^\/arrayexpress/, ''),
+      },
+    },
   },
 });

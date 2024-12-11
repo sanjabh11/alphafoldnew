@@ -1,6 +1,8 @@
 import axios from 'axios';
 import { API_CONFIG } from '../config/apiConfig';
 
+console.log('API_CONFIG:', API_CONFIG); // Log the API_CONFIG
+
 export interface PredictionRequest {
   sequence: string;
   mode: 'fast' | 'accurate';
@@ -29,6 +31,9 @@ class AlphaFold3Service {
   private baseUrl: string;
 
   constructor() {
+    if (!API_CONFIG.alphafold3 || !API_CONFIG.alphafold3.baseUrl) {
+      throw new Error('AlphaFold3 baseUrl is not defined in API_CONFIG');
+    }
     this.baseUrl = API_CONFIG.alphafold3.baseUrl;
   }
 
