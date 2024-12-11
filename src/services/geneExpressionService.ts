@@ -1,11 +1,13 @@
-import axios, { AxiosInstance, AxiosError } from 'axios';
+import axios, { AxiosError } from 'axios';
 import { API_CONFIG } from '../config/apiConfig';
+import { RateLimiter } from '../utils/rateLimiter';
 
 export interface ExpressionQuery {
   geneId: string;
   organism?: string;
   tissueType?: string;
   experimentType?: string;
+  timePoint?: string;
 }
 
 export interface ExpressionData {
@@ -17,87 +19,214 @@ export interface ExpressionData {
     condition?: string;
     timePoint?: string;
     platform?: string;
-    experimentId: string;
-    title: string;
-    description?: string;
-    organism?: string;
-    [key: string]: any;
+    experimentId?: string;
+    title?: string;
   };
-  statistics: ExpressionStatistics;
+  statistics?: {
+    mean: number;
+    median: number;
+    stdDev: number;
+  };
 }
 
-interface ExpressionStatistics {
-  mean: number;
-  median: number;
-  stdDev: number;
-  min: number;
-  max: number;
-  sampleSize: number;
-}
-
-interface SearchResults {
-  geoResults: ExpressionData[];
-  arrayExpressResults: ExpressionData[];
-  error?: string;
-}
-
-interface ArrayExpressExperiment {
-  accession: string;
-  name: string;
-  description: string;
-  organism: string;
-  experimentalFactors?: string[];
-}
-
-export interface PathwayAnalysisResult {
-  pathwayId: string;
-  name: string;
-  pValue: number;
-  foldChange: number;
-  genes: string[];
-  source: string;
-}
-
-export interface CoexpressionNetwork {
-  nodes: Array<{
-    id: string;
-    name: string;
-    score: number;
+class GeneExpressionService {
+  private geoConfig: typeof API_CONFIG.geneExpression.geo;
+  private arrayExpressConfig: typeof API_CONFIG.geneExpression.arrayExpress;
+  private cache: Map<string, {
+    data: ExpressionData[];
+    timestamp: number;
   }>;
-  edges: Array<{
-    source: string;
-    target: string;
-    correlation: number;
-  }>;
-}
-
-export class GeneExpressionService {
-  private axiosInstance: AxiosInstance;
-  private readonly MAX_RETRIES = 3;
-  private readonly RETRY_DELAY = 1000;
-  private readonly geoConfig = API_CONFIG.geneExpression.geo;
-  private readonly arrayExpressConfig = API_CONFIG.geneExpression.arrayExpress;
+  private geoRateLimiter: RateLimiter;
+  private arrayExpressRateLimiter: RateLimiter;
+  private axiosInstance;
 
   constructor() {
+    this.geoConfig = API_CONFIG.geneExpression.geo;
+    this.arrayExpressConfig = API_CONFIG.geneExpression.arrayExpress;
+    this.cache = new Map();
+    
+    this.geoRateLimiter = new RateLimiter({
+      requestsPerMinute: 30,
+      concurrentRequests: 5
+    });
+
+    this.arrayExpressRateLimiter = new RateLimiter({
+      requestsPerMinute: 30,
+      concurrentRequests: 5
+    });
+    
     this.axiosInstance = axios.create({
       timeout: 30000,
-      headers: {
-        'Content-Type': 'application/json'
-      }
+      validateStatus: (status) => status < 500
     });
+
+    this.setupAxiosInterceptors();
+    this.initializeCache();
   }
 
-  private validateApiKey(): string {
-    const apiKey = import.meta.env.VITE_NCBI_API_KEY;
-    if (!apiKey) {
-      throw new Error('NCBI API key not found in environment variables');
+  private setupAxiosInterceptors() {
+    this.axiosInstance.interceptors.response.use(
+      response => response,
+      async (error: AxiosError) => {
+        const config = error.config;
+        if (!config || config.retryCount === undefined || config.retryCount >= 3) {
+          return Promise.reject(error);
+        }
+
+        config.retryCount = config.retryCount ? config.retryCount + 1 : 1;
+        const delay = Math.min(1000 * (2 ** config.retryCount), 10000);
+        
+        await new Promise(resolve => setTimeout(resolve, delay));
+        return this.axiosInstance(config);
+      }
+    );
+  }
+
+  private async initializeCache() {
+    try {
+      const cachedData = localStorage.getItem('gene_expression_cache');
+      if (cachedData) {
+        const parsed = JSON.parse(cachedData);
+        const now = Date.now();
+        Object.entries(parsed).forEach(([key, value]: [string, any]) => {
+          if (now - value.timestamp < 1800000) { // 30 minutes TTL
+            this.cache.set(key, value);
+          }
+        });
+      }
+    } catch (error) {
+      console.warn('Failed to initialize cache:', error);
     }
-    return apiKey;
   }
 
-  async searchGene(query: ExpressionQuery): Promise<SearchResults> {
-    console.log('Searching for gene expression data:', query);
+  private updateCache(key: string, value: ExpressionData[]) {
+    try {
+      const cacheEntry = {
+        data: value,
+        timestamp: Date.now()
+      };
+      this.cache.set(key, cacheEntry);
 
+      // Cleanup old entries
+      const now = Date.now();
+      for (const [key, entry] of this.cache.entries()) {
+        if (now - entry.timestamp >= 1800000) {
+          this.cache.delete(key);
+        }
+      }
+
+      localStorage.setItem('gene_expression_cache',
+        JSON.stringify(Object.fromEntries(this.cache.entries()))
+      );
+    } catch (error) {
+      console.warn('Failed to update cache:', error);
+    }
+  }
+
+  private getCacheKey(query: ExpressionQuery): string {
+    return JSON.stringify(query);
+  }
+
+  async searchGEO(query: ExpressionQuery): Promise<ExpressionData[]> {
+    const cacheKey = this.getCacheKey(query);
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 1800000) {
+      return cached.data;
+    }
+
+    await this.geoRateLimiter.acquire();
+    try {
+      const searchResponse = await this.axiosInstance.get(
+        `${this.geoConfig.baseUrl}${this.geoConfig.endpoints.search}`,
+        {
+          params: {
+            ...this.geoConfig.params,
+            term: `${query.geneId}[Gene] AND "${query.organism}"[Organism]`,
+            retmax: 10
+          }
+        }
+      );
+
+      const ids = searchResponse.data.esearchresult.idlist;
+      if (!ids.length) {
+        return [];
+      }
+
+      const fetchResponse = await this.axiosInstance.get(
+        `${this.geoConfig.baseUrl}${this.geoConfig.endpoints.fetch}`,
+        {
+          params: {
+            ...this.geoConfig.params,
+            id: ids.join(',')
+          }
+        }
+      );
+
+      const results = this.parseGEOResponse(fetchResponse.data, query);
+      this.updateCache(cacheKey, results);
+      return results;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 429) {
+          throw new Error('GEO rate limit exceeded. Please try again later.');
+        }
+      }
+      throw error;
+    } finally {
+      this.geoRateLimiter.release();
+    }
+  }
+
+  async searchArrayExpress(query: ExpressionQuery): Promise<ExpressionData[]> {
+    const cacheKey = `ae_${this.getCacheKey(query)}`;
+    const cached = this.cache.get(cacheKey);
+    if (cached && Date.now() - cached.timestamp < 1800000) {
+      return cached.data;
+    }
+
+    await this.arrayExpressRateLimiter.acquire();
+    try {
+      const response = await this.axiosInstance.get(
+        `${this.arrayExpressConfig.baseUrl}${this.arrayExpressConfig.endpoints.query}`,
+        {
+          params: {
+            keywords: query.geneId,
+            organism: query.organism,
+            experimentType: query.experimentType
+          }
+        }
+      );
+
+      const results = this.parseArrayExpressResponse(response.data, query);
+      this.updateCache(cacheKey, results);
+      return results;
+    } catch (error) {
+      if (error instanceof AxiosError) {
+        if (error.response?.status === 429) {
+          throw new Error('ArrayExpress rate limit exceeded. Please try again later.');
+        }
+      }
+      throw error;
+    } finally {
+      this.arrayExpressRateLimiter.release();
+    }
+  }
+
+  private parseGEOResponse(data: any, query: ExpressionQuery): ExpressionData[] {
+    // Implementation of GEO response parsing
+    return [];
+  }
+
+  private parseArrayExpressResponse(data: any, query: ExpressionQuery): ExpressionData[] {
+    // Implementation of ArrayExpress response parsing
+    return [];
+  }
+
+  async searchGene(query: ExpressionQuery): Promise<{
+    geoResults: ExpressionData[];
+    arrayExpressResults: ExpressionData[];
+    error?: string;
+  }> {
     try {
       const [geoResults, arrayExpressResults] = await Promise.allSettled([
         this.searchGEO(query),
@@ -107,356 +236,13 @@ export class GeneExpressionService {
       return {
         geoResults: geoResults.status === 'fulfilled' ? geoResults.value : [],
         arrayExpressResults: arrayExpressResults.status === 'fulfilled' ? arrayExpressResults.value : [],
+        error: geoResults.status === 'rejected' || arrayExpressResults.status === 'rejected' 
+          ? 'Some data sources failed to respond' 
+          : undefined
       };
     } catch (error) {
-      console.error('Gene search failed:', error);
-      return {
-        geoResults: [],
-        arrayExpressResults: [],
-        error: error.message
-      };
-    }
-  }
-
-  async searchGEO(query: ExpressionQuery): Promise<ExpressionData[]> {
-    console.log('Searching GEO for:', query);
-
-    try {
-      const searchResponse = await this.makeRequest(
-        '/api/proxy/geo/esearch.fcgi',
-        {
-          db: 'gds',
-          term: `${query.geneId}[Gene Symbol] AND "expression profiling"[DataSet Type]${
-            query.organism ? ` AND "${query.organism}"[Organism]` : ''
-          }`,
-          retmax: 20,
-          retmode: 'json'
-        }
-      );
-
-      if (!searchResponse?.esearchresult?.idlist?.length) {
-        console.log('No GEO datasets found');
-        return [];
-      }
-
-      const results: ExpressionData[] = [];
-      const batchSize = 5;
-
-      for (let i = 0; i < searchResponse.esearchresult.idlist.length; i += batchSize) {
-        const batch = searchResponse.esearchresult.idlist.slice(i, i + batchSize);
-        await this.processGeoBatch(batch, query, results);
-        await new Promise(resolve => setTimeout(resolve, 1000));
-      }
-
-      return results;
-    } catch (error) {
-      console.error('GEO search failed:', error);
-      return [];
-    }
-  }
-
-  private async processGeoBatch(batch: string[], query: ExpressionQuery, results: ExpressionData[]): Promise<void> {
-    try {
-      const summaryResponse = await this.makeRequest(
-        '/api/proxy/geo/esummary.fcgi',
-        {
-          db: 'gds',
-          id: batch.join(','),
-          retmode: 'json'
-        }
-      );
-
-      if (!summaryResponse?.result) return;
-
-      for (const id of Object.keys(summaryResponse.result)) {
-        const dataset = summaryResponse.result[id];
-        if (!dataset || !dataset.accession) continue;
-
-        try {
-          const values = await this.fetchGEODatasetValues(dataset.accession);
-          if (values.length > 0) {
-            results.push(this.createGeoDatasetResult(dataset, values, query));
-          }
-        } catch (error) {
-          console.warn(`Failed to process dataset ${dataset.accession}:`, error);
-        }
-      }
-    } catch (error) {
-      console.warn('Failed to process GEO batch:', error);
-    }
-  }
-
-  private async fetchGEODatasetValues(accession: string): Promise<number[]> {
-    try {
-      const response = await this.makeRequest(
-        '/api/proxy/geo/efetch.fcgi',
-        {
-          db: 'gds',
-          id: accession,
-          rettype: 'full',
-          retmode: 'text'
-        }
-      );
-
-      return this.extractGEODatasetValues(response);
-    } catch (error) {
-      console.warn(`Failed to fetch GEO values for ${accession}:`, error);
-      return [];
-    }
-  }
-
-  private createGeoDatasetResult(dataset: any, values: number[], query: ExpressionQuery): ExpressionData {
-    return {
-      id: dataset.accession,
-      source: 'GEO',
-      values,
-      metadata: {
-        tissue: dataset.tissue || query.tissueType || '',
-        condition: dataset.title || '',
-        platform: dataset.gpl || '',
-        experimentId: dataset.accession,
-        title: dataset.title || '',
-        description: dataset.summary || '',
-        organism: dataset.taxon || query.organism || 'Homo sapiens'
-      },
-      statistics: this.calculateStatistics(values)
-    };
-  }
-
-  private extractGEODatasetValues(data: string): number[] {
-    try {
-      const values: number[] = [];
-      const lines = data.split('\n');
-      let dataStarted = false;
-
-      for (const line of lines) {
-        if (line.startsWith('!dataset_table_begin')) {
-          dataStarted = true;
-          continue;
-        }
-        if (line.startsWith('!dataset_table_end')) break;
-        if (!dataStarted || !line.trim() || line.startsWith('!')) continue;
-
-        const value = parseFloat(line.split('\t')[1]);
-        if (!isNaN(value)) values.push(value);
-      }
-
-      return values;
-    } catch (error) {
-      console.error('Error extracting GEO values:', error);
-      return [];
-    }
-  }
-
-  private async searchArrayExpress(query: ExpressionQuery): Promise<ExpressionData[]> {
-    try {
-      const searchParams = {
-        keywords: query.geneId,
-        species: query.organism || 'Homo sapiens',
-        exptype: 'RNA-seq OR array assay',
-        raw: true
-      };
-
-      const response = await this.makeRequest(
-        '/api/proxy/arrayexpress/json/v3/experiments',
-        searchParams
-      );
-
-      if (!response?.experiments?.length) {
-        console.log('No ArrayExpress experiments found');
-        return [];
-      }
-
-      return response.experiments.map((experiment: any) => ({
-        id: experiment.accession,
-        source: 'ArrayExpress',
-        values: [],
-        metadata: {
-          experimentId: experiment.accession,
-          title: experiment.name,
-          description: experiment.description,
-          organism: experiment.organism,
-          tissue: experiment.experimentalFactors?.[0] || query.tissueType
-        },
-        statistics: {
-          mean: 0,
-          median: 0,
-          stdDev: 0,
-          min: 0,
-          max: 0,
-          sampleSize: experiment.samples || 0
-        }
-      }));
-    } catch (error) {
-      console.error('ArrayExpress search failed:', error);
-      return [];
-    }
-  }
-
-  private async makeRequest(url: string, params: any): Promise<any> {
-    try {
-      console.log('Making request to:', url, 'with params:', params);
-
-      // Add API key to GEO requests
-      if (url.startsWith('/api/proxy/geo')) {
-        params = { ...params, api_key: this.validateApiKey() };
-      }
-
-      const response = await this.retryRequest(() => 
-        this.axiosInstance.get(url, { 
-          params,
-          headers: {
-            'Accept': params.retmode === 'json' ? 'application/json' : 'text/plain',
-            'Content-Type': 'application/json'
-          }
-        })
-      );
-
-      if (!response.data) {
-        throw new Error('Empty response received');
-      }
-
-      return response.data;
-    } catch (error) {
-      if (error instanceof AxiosError) {
-        if (error.code === 'ERR_NETWORK') {
-          console.error('Network error:', error.message);
-          throw new Error('Network connection error. Please check your internet connection.');
-        }
-        if (error.response?.status === 404) {
-          console.warn('Resource not found:', url);
-          return null;
-        }
-        if (error.response?.status === 429) {
-          throw new Error('Rate limit exceeded. Please try again later.');
-        }
-      }
+      console.error('Error searching gene expression:', error);
       throw error;
-    }
-  }
-
-  private async retryRequest(requestFn: () => Promise<any>, attempt = 1): Promise<any> {
-    try {
-      return await requestFn();
-    } catch (error) {
-      if (attempt >= this.MAX_RETRIES || 
-          (error instanceof AxiosError && error.response?.status === 403)) {
-        throw error;
-      }
-
-      const delay = this.RETRY_DELAY * Math.pow(2, attempt - 1);
-      console.log(`Retrying request, ${this.MAX_RETRIES - attempt} attempts remaining`);
-      await new Promise(resolve => setTimeout(resolve, delay));
-      return this.retryRequest(requestFn, attempt + 1);
-    }
-  }
-
-  private normalizeValues(values: number[]): number[] {
-    if (values.length === 0) return [];
-
-    const min = Math.min(...values);
-    const max = Math.max(...values);
-    const range = max - min;
-
-    return range === 0 ? values.map(() => 1) : values.map(v => (v - min) / range);
-  }
-
-  private calculateStatistics(values: number[]): ExpressionStatistics {
-    if (values.length === 0) {
-      return {
-        mean: 0,
-        median: 0,
-        stdDev: 0,
-        min: 0,
-        max: 0
-      };
-    }
-
-    const sorted = [...values].sort((a, b) => a - b);
-    const sum = values.reduce((a, b) => a + b, 0);
-    const mean = sum / values.length;
-    const median = values.length % 2 === 0 
-      ? (sorted[values.length / 2 - 1] + sorted[values.length / 2]) / 2
-      : sorted[Math.floor(values.length / 2)];
-    
-    const squaredDiffs = values.map(v => Math.pow(v - mean, 2));
-    const variance = squaredDiffs.reduce((a, b) => a + b, 0) / values.length;
-    const stdDev = Math.sqrt(variance);
-
-    return {
-      mean,
-      median,
-      stdDev,
-      min: sorted[0],
-      max: sorted[sorted.length - 1]
-    };
-  }
-
-  async analyzePathways(geneIds: string[]): Promise<PathwayAnalysisResult[]> {
-    try {
-      // Using local browser storage for caching results
-      const cacheKey = `pathway_${geneIds.sort().join('_')}`;
-      const cachedResult = localStorage.getItem(cacheKey);
-      
-      if (cachedResult) {
-        return JSON.parse(cachedResult);
-      }
-
-      const response = await this.axiosInstance.post(
-        `${this.geoConfig.baseUrl}${this.geoConfig.endpoints.search}`,
-        {
-          genes: geneIds,
-          organism: 'human', // default to human, can be made configurable
-        }
-      );
-
-      const results = response.data.map(pathway => ({
-        pathwayId: pathway.id,
-        name: pathway.name,
-        pValue: pathway.pValue,
-        foldChange: pathway.foldChange,
-        genes: pathway.genes,
-        source: pathway.source
-      }));
-
-      // Cache the results
-      localStorage.setItem(cacheKey, JSON.stringify(results));
-      return results;
-    } catch (error) {
-      console.error('Pathway analysis failed:', error);
-      throw new Error('Failed to analyze pathways');
-    }
-  }
-
-  async getCoexpressionNetwork(geneId: string, threshold: number = 0.7): Promise<CoexpressionNetwork> {
-    try {
-      const cacheKey = `coexpression_${geneId}_${threshold}`;
-      const cachedResult = localStorage.getItem(cacheKey);
-      
-      if (cachedResult) {
-        return JSON.parse(cachedResult);
-      }
-
-      const response = await this.axiosInstance.get(
-        `${this.geoConfig.baseUrl}${this.geoConfig.endpoints.search}`,
-        {
-          params: {
-            gene: geneId,
-            threshold: threshold
-          }
-        }
-      );
-
-      const network = {
-        nodes: response.data.nodes,
-        edges: response.data.edges
-      };
-
-      localStorage.setItem(cacheKey, JSON.stringify(network));
-      return network;
-    } catch (error) {
-      console.error('Coexpression network generation failed:', error);
-      throw new Error('Failed to generate coexpression network');
     }
   }
 }

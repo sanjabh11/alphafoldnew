@@ -99,13 +99,228 @@ export class DataProcessingUtils {
       previousSlope = currentSlope;
     }
 
-    const trend = changes.length > 1 
-      ? 'fluctuating' 
-      : values[values.length - 1] > values[0] 
-        ? 'increasing' 
-        : 'decreasing';
+    // Determine overall trend
+    const firstValue = values[0];
+    const lastValue = values[values.length - 1];
+    const overallChange = lastValue - firstValue;
+    
+    let trend: 'increasing' | 'decreasing' | 'fluctuating';
+    if (changes.length > values.length / 4) {
+      trend = 'fluctuating';
+    } else if (overallChange > 0) {
+      trend = 'increasing';
+    } else {
+      trend = 'decreasing';
+    }
 
     return { trend, changePoints: changes };
+  }
+
+  static performClusterAnalysis(
+    data: ExpressionData[]
+  ): { clusters: number[]; silhouetteScore: number } {
+    const points = data.map(d => d.values);
+    const k = Math.min(Math.ceil(Math.sqrt(points.length / 2)), 10);
+    
+    // K-means clustering
+    const { clusters, centroids } = this.kMeans(points, k);
+    const silhouetteScore = this.calculateSilhouetteScore(points, clusters, centroids);
+    
+    return { clusters, silhouetteScore };
+  }
+
+  static performEnrichmentAnalysis(
+    genes: string[],
+    database: 'GO' | 'KEGG' | 'Reactome' = 'GO'
+  ): Promise<EnrichmentResult[]> {
+    // Implementation depends on the chosen database API
+    return Promise.resolve([]);
+  }
+
+  static calculateCorrelation(
+    data1: number[],
+    data2: number[]
+  ): { pearson: number; spearman: number } {
+    const n = Math.min(data1.length, data2.length);
+    
+    // Pearson correlation
+    const mean1 = data1.reduce((a, b) => a + b, 0) / n;
+    const mean2 = data2.reduce((a, b) => a + b, 0) / n;
+    
+    let num = 0;
+    let den1 = 0;
+    let den2 = 0;
+    
+    for (let i = 0; i < n; i++) {
+      const x = data1[i] - mean1;
+      const y = data2[i] - mean2;
+      num += x * y;
+      den1 += x * x;
+      den2 += y * y;
+    }
+    
+    const pearson = num / Math.sqrt(den1 * den2);
+
+    // Spearman correlation
+    const ranked1 = this.rankData(data1);
+    const ranked2 = this.rankData(data2);
+    
+    let sumD2 = 0;
+    for (let i = 0; i < n; i++) {
+      sumD2 += Math.pow(ranked1[i] - ranked2[i], 2);
+    }
+    
+    const spearman = 1 - (6 * sumD2) / (n * (n * n - 1));
+
+    return { pearson, spearman };
+  }
+
+  private static rankData(data: number[]): number[] {
+    const sorted = data.map((value, index) => ({ value, index }))
+      .sort((a, b) => a.value - b.value);
+    
+    const ranks = new Array(data.length);
+    for (let i = 0; i < data.length; i++) {
+      ranks[sorted[i].index] = i + 1;
+    }
+    
+    return ranks;
+  }
+
+  private static kMeans(
+    points: number[][],
+    k: number
+  ): { clusters: number[]; centroids: number[][] } {
+    // Initialize centroids randomly
+    const centroids = Array.from({ length: k }, () => 
+      points[Math.floor(Math.random() * points.length)].slice()
+    );
+    
+    const clusters = new Array(points.length).fill(0);
+    let changed = true;
+    
+    while (changed) {
+      changed = false;
+      
+      // Assign points to nearest centroid
+      for (let i = 0; i < points.length; i++) {
+        const newCluster = this.findNearestCentroid(points[i], centroids);
+        if (newCluster !== clusters[i]) {
+          clusters[i] = newCluster;
+          changed = true;
+        }
+      }
+      
+      // Update centroids
+      for (let i = 0; i < k; i++) {
+        const clusterPoints = points.filter((_, index) => clusters[index] === i);
+        if (clusterPoints.length > 0) {
+          centroids[i] = this.calculateCentroid(clusterPoints);
+        }
+      }
+    }
+    
+    return { clusters, centroids };
+  }
+
+  private static findNearestCentroid(
+    point: number[],
+    centroids: number[][]
+  ): number {
+    let minDist = Infinity;
+    let nearest = 0;
+    
+    for (let i = 0; i < centroids.length; i++) {
+      const dist = this.euclideanDistance(point, centroids[i]);
+      if (dist < minDist) {
+        minDist = dist;
+        nearest = i;
+      }
+    }
+    
+    return nearest;
+  }
+
+  private static euclideanDistance(
+    point1: number[],
+    point2: number[]
+  ): number {
+    return Math.sqrt(
+      point1.reduce((sum, value, i) => 
+        sum + Math.pow(value - point2[i], 2), 0
+      )
+    );
+  }
+
+  private static calculateCentroid(
+    points: number[][]
+  ): number[] {
+    const n = points.length;
+    const dim = points[0].length;
+    return Array.from({ length: dim }, (_, i) =>
+      points.reduce((sum, p) => sum + p[i], 0) / n
+    );
+  }
+
+  private static calculateSilhouetteScore(
+    points: number[][],
+    clusters: number[],
+    centroids: number[][]
+  ): number {
+    const n = points.length;
+    let totalScore = 0;
+    
+    for (let i = 0; i < n; i++) {
+      const a = this.calculateAverageIntraClusterDistance(
+        points[i],
+        points,
+        clusters,
+        clusters[i]
+      );
+      const b = this.calculateMinInterClusterDistance(
+        points[i],
+        points,
+        clusters,
+        clusters[i]
+      );
+      
+      totalScore += (b - a) / Math.max(a, b);
+    }
+    
+    return totalScore / n;
+  }
+
+  private static calculateAverageIntraClusterDistance(
+    point: number[],
+    points: number[][],
+    clusters: number[],
+    cluster: number
+  ): number {
+    const clusterPoints = points.filter((_, i) => 
+      clusters[i] === cluster && points[i] !== point
+    );
+    
+    if (clusterPoints.length === 0) return 0;
+    
+    return clusterPoints.reduce((sum, p) => 
+      sum + this.euclideanDistance(point, p), 0
+    ) / clusterPoints.length;
+  }
+
+  private static calculateMinInterClusterDistance(
+    point: number[],
+    points: number[][],
+    clusters: number[],
+    cluster: number
+  ): number {
+    const otherClusters = [...new Set(clusters)].filter(c => c !== cluster);
+    
+    return Math.min(...otherClusters.map(c => {
+      const clusterPoints = points.filter((_, i) => clusters[i] === c);
+      return clusterPoints.reduce((sum, p) => 
+        sum + this.euclideanDistance(point, p), 0
+      ) / clusterPoints.length;
+    }));
   }
 }
 
@@ -147,4 +362,12 @@ export class TissueSpecificityAnalyzer {
     const relativeMeans = allMeans.map(mean => 1 - (mean / maxMean));
     return relativeMeans.reduce((a, b) => a + b, 0) / (allMeans.length - 1);
   }
+}
+
+interface EnrichmentResult {
+  term: string;
+  pValue: number;
+  adjustedPValue: number;
+  genes: string[];
+  database: string;
 }

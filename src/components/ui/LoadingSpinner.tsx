@@ -2,11 +2,19 @@
 import React from 'react';
 import '../../styles/components/LoadingSpinner.css';
 
-const LoadingSpinner: React.FC = () => (
-  <div className="loading-spinner">
+interface LoadingSpinnerProps {
+  size?: 'small' | 'medium' | 'large';
+  showText?: boolean;
+}
+
+const LoadingSpinner: React.FC<LoadingSpinnerProps> = ({ 
+  size = 'medium',
+  showText = false 
+}) => (
+  <div className={`loading-spinner loading-spinner-${size}`}>
     <div className="spinner"></div>
-    <p>Loading...</p>
+    {showText && <p>Loading...</p>}
   </div>
 );
 
-export default LoadingSpinner;
+export { LoadingSpinner };

@@ -1,0 +1,197 @@
+{
+  "api": {
+    "ncbi": {
+      "baseUrl": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+      "description": "NCBI E-utilities for accessing NCBI databases.",
+      "endpoints": {
+        "esearch": {
+          "path": "/esearch.fcgi",
+          "method": "GET",
+          "description": "Search for records in a specified NCBI database.",
+          "parameters": {
+            "db": "Database to search (e.g., 'gene', 'protein', 'gds', 'geo')",
+            "term": "Search term (e.g., gene symbol or accession number)",
+            "retmode": "Return mode ('json', 'xml', 'text')",
+            "retmax": "Maximum number of records to return",
+            "retstart": "Record number to start retrieval",
+            "usehistory": "Set to 'y' to store results in history for later retrieval",
+            "api_key": "Your NCBI API key (improves rate limits)"
+          }
+        },
+        "efetch": {
+          "path": "/efetch.fcgi",
+          "method": "GET",
+          "description": "Retrieve full records from a list of UIDs.",
+          "parameters": {
+            "db": "Database to fetch from",
+            "id": "Comma-separated list of UIDs",
+            "retmode": "Return mode ('json', 'xml', 'text')",
+            "rettype": "Record type to retrieve (varies by database)",
+            "api_key": "Your NCBI API key"
+          }
+        },
+        "esummary": {
+          "path": "/esummary.fcgi",
+          "method": "GET",
+          "description": "Retrieve document summaries from a list of UIDs.",
+          "parameters": {
+            "db": "Database to summarize",
+            "id": "Comma-separated list of UIDs",
+            "retmode": "Return mode ('json', 'xml')",
+            "api_key": "Your NCBI API key"
+          }
+        },
+        "elink": {
+          "path": "/elink.fcgi",
+          "method": "GET",
+          "description": "Retrieve links between different NCBI databases.",
+          "parameters": {
+            "dbfrom": "Database UIDs come from",
+            "db": "Database UIDs point to",
+            "id": "Comma-separated list of UIDs",
+            "api_key": "Your NCBI API key"
+          }
+        },
+        "egi": {
+          "path": "/egquery.fcgi",
+          "method": "GET",
+          "description": "Global query: counts of search terms across all databases.",
+          "parameters": {
+            "term": "Search term",
+            "api_key": "Your NCBI API key"
+          }
+        }
+      },
+      "rateLimits": {
+        "withoutApiKey": "3 requests per second",
+        "withApiKey": "10 requests per second"
+      }
+    },
+    "geo": {
+      "baseUrl": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+      "description": "Access to NCBI GEO datasets.",
+      "endpoints": "Uses standard NCBI E-utilities endpoints (esearch, efetch, etc.) with 'gds' database.",
+      "note": "Use 'db=gds' in API calls to interact with GEO datasets."
+    },
+    "clinvar": {
+      "baseUrl": "https://eutils.ncbi.nlm.nih.gov/entrez/eutils",
+      "description": "Access to ClinVar data via E-utilities.",
+      "endpoints": {
+        "esearch": {
+          "path": "/esearch.fcgi",
+          "method": "GET",
+          "parameters": {
+            "db": "Set to 'clinvar'",
+            "term": "Search term",
+            "retmode": "Return mode ('json', 'xml')"
+          }
+        },
+        "efetch": {
+          "path": "/efetch.fcgi",
+          "method": "GET",
+          "parameters": {
+            "db": "Set to 'clinvar'",
+            "id": "ClinVar ID(s)",
+            "retmode": "Return mode ('xml')",
+            "rettype": "Specify 'vcv' for Variation IDs or 'rcv' for Record IDs"
+          }
+        }
+      }
+    },
+    "uniprot": {
+      "baseUrl": "https://rest.uniprot.org",
+      "description": "Access to UniProt protein sequences and functional information.",
+      "endpoints": {
+        "search": {
+          "path": "/uniprotkb/search",
+          "method": "GET",
+          "description": "Search the UniProtKB database.",
+          "parameters": {
+            "query": "Search query (e.g., gene name, protein name)",
+            "format": "Response format ('json', 'xml', 'txt', 'fasta')",
+            "fields": "Comma-separated list of fields to include in the response",
+            "size": "Number of results to return"
+          }
+        },
+        "retrieve": {
+          "path": "/uniprotkb/{accession}",
+          "method": "GET",
+          "description": "Retrieve a UniProtKB entry by accession number.",
+          "parameters": {
+            "accession": "UniProt accession number",
+            "format": "Response format ('json', 'xml', 'txt', 'fasta')"
+          }
+        }
+      },
+      "rateLimits": {
+        "standard": "Up to 25 requests per second"
+      }
+    },
+    "ebi": {
+      "arrayExpress": {
+        "baseUrl": "https://www.ebi.ac.uk/arrayexpress/json/v3",
+        "description": "Access to ArrayExpress experiment data.",
+        "endpoints": {
+          "search": {
+            "path": "/experiments",
+            "method": "GET",
+            "description": "Search for experiments in ArrayExpress.",
+            "parameters": {
+              "keywords": "Search keywords",
+              "species": "Filter by species",
+              "exptype": "Experiment type (e.g., 'RNA-seq', 'array assay')",
+              "array": "Filter by array type",
+              "directsub": "Filter by direct submissions ('true' or 'false')",
+              "show": "Number of results to return"
+            }
+          },
+          "retrieve": {
+            "path": "/experiments/{accession}",
+            "method": "GET",
+            "description": "Retrieve details of an experiment.",
+            "parameters": {
+              "accession": "ArrayExpress experiment accession number"
+            }
+          }
+        }
+      },
+      "bioStudies": {
+        "baseUrl": "https://www.ebi.ac.uk/biostudies/api/v1",
+        "description": "Access to BioStudies submissions, including ArrayExpress data.",
+        "endpoints": {
+          "search": {
+            "path": "/search",
+            "method": "GET",
+            "description": "Search for studies in BioStudies.",
+            "parameters": {
+              "query": "Search query",
+              "type": "Type of study (e.g., 'ArrayExpress')",
+              "offset": "Offset for pagination",
+              "limit": "Number of results to return"
+            }
+          },
+          "retrieve": {
+            "path": "/studies/{accno}",
+            "method": "GET",
+            "description": "Retrieve study details.",
+            "parameters": {
+              "accno": "Study accession number"
+            }
+          }
+        }
+      }
+    },
+    "alphafold": {
+      "description": "Input requirements for AlphaFold structure prediction.",
+      "input": {
+        "sequence": "Amino acid sequence in FASTA format",
+        "maxSequenceLength": 2700,
+        "format": "Plain text"
+      },
+      "note": "AlphaFold requires an amino acid sequence; no API is available for direct prediction without running the software locally."
+    },
+    "additionalApis": {
+      "note": "No direct APIs are available for AlphaFold predictions. Consider using available protein data from databases like UniProt or PDB."
+    }
+  }
+}

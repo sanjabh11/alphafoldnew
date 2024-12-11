@@ -12,52 +12,45 @@ export interface PredictionRequest {
 
 export interface PredictionResult {
   jobId: string;
-  status: 'pending' | 'processing' | 'completed' | 'failed';
+  status: 'pending' | 'running' | 'success' | 'error';
   result?: {
     pdbData: string;
     confidenceScore: number;
-    domains: Array<{
+    domains?: Array<{
       start: number;
       end: number;
       confidence: number;
     }>;
   };
+  error?: string;
 }
 
 class AlphaFold3Service {
   private baseUrl: string;
-  private cache: Map<string, PredictionResult>;
 
   constructor() {
     this.baseUrl = API_CONFIG.alphafold3.baseUrl;
-    this.cache = new Map();
-    this.initializeCache();
-  }
-
-  private async initializeCache() {
-    const cachedData = localStorage.getItem('alphafold3_cache');
-    if (cachedData) {
-      const parsed = JSON.parse(cachedData);
-      Object.entries(parsed).forEach(([key, value]) => {
-        this.cache.set(key, value as PredictionResult);
-      });
-    }
-  }
-
-  private updateCache(key: string, value: PredictionResult) {
-    this.cache.set(key, value);
-    localStorage.setItem('alphafold3_cache', 
-      JSON.stringify(Object.fromEntries(this.cache.entries()))
-    );
   }
 
   async submitPrediction(request: PredictionRequest): Promise<string> {
     try {
+      // Real AlphaFold API endpoint
       const response = await axios.post(
-        `${this.baseUrl}/predict`,
-        request
+        `${this.baseUrl}/prediction`,
+        {
+          sequence: request.sequence,
+          template_mode: request.options?.templates ? 'template' : 'pdb70',
+          model_mode: request.mode === 'accurate' ? 'monomer' : 'multimer',
+          max_template_date: '2024-12-08', // Current date
+          num_predictions: 1
+        }
       );
-      return response.data.jobId;
+
+      if (response.data.error) {
+        throw new Error(response.data.error);
+      }
+
+      return response.data.job_id;
     } catch (error) {
       console.error('Error submitting prediction:', error);
       throw error;
@@ -65,42 +58,75 @@ class AlphaFold3Service {
   }
 
   async getPredictionStatus(jobId: string): Promise<PredictionResult> {
-    // Check cache first
-    const cached = this.cache.get(jobId);
-    if (cached && cached.status === 'completed') {
-      return cached;
-    }
-
     try {
-      const response = await axios.get(
+      // Real AlphaFold API status endpoint
+      const statusResponse = await axios.get(
         `${this.baseUrl}/status/${jobId}`
       );
-      const result = response.data;
-      
-      if (result.status === 'completed') {
-        this.updateCache(jobId, result);
+
+      const status = statusResponse.data.status;
+
+      if (status === 'error') {
+        return {
+          jobId,
+          status: 'error',
+          error: statusResponse.data.message || 'Prediction failed'
+        };
       }
-      
-      return result;
+
+      if (status === 'success') {
+        // Get the actual prediction results
+        const resultResponse = await axios.get(
+          `${this.baseUrl}/result/${jobId}`
+        );
+
+        return {
+          jobId,
+          status: 'success',
+          result: {
+            pdbData: resultResponse.data.pdb,
+            confidenceScore: resultResponse.data.confidence_score,
+            domains: resultResponse.data.domain_definitions?.map((d: any) => ({
+              start: d.start,
+              end: d.end,
+              confidence: d.confidence
+            }))
+          }
+        };
+      }
+
+      return {
+        jobId,
+        status: status === 'running' ? 'running' : 'pending'
+      };
     } catch (error) {
       console.error('Error getting prediction status:', error);
       throw error;
     }
   }
 
-  async analyzePrediction(jobId: string, options: {
-    includeDomains?: boolean;
-    includeBindingSites?: boolean;
-    includeStability?: boolean;
-  } = {}): Promise<any> {
+  async getPDBStructure(uniprotId: string): Promise<string> {
     try {
-      const response = await axios.post(
-        `${this.baseUrl}/analyze/${jobId}`,
-        options
+      // Get structure from AlphaFold database
+      const response = await axios.get(
+        `https://alphafold.ebi.ac.uk/files/AF-${uniprotId}-F1-model_v4.pdb`
       );
       return response.data;
     } catch (error) {
-      console.error('Error analyzing prediction:', error);
+      console.error('Error fetching PDB structure:', error);
+      throw error;
+    }
+  }
+
+  async getStructureMetadata(uniprotId: string): Promise<any> {
+    try {
+      // Get metadata from AlphaFold database
+      const response = await axios.get(
+        `https://alphafold.ebi.ac.uk/api/prediction/${uniprotId}`
+      );
+      return response.data;
+    } catch (error) {
+      console.error('Error fetching structure metadata:', error);
       throw error;
     }
   }

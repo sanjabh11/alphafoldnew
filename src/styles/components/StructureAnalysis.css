@@ -1,0 +1,100 @@
+.structure-analysis-panel {
+  @apply bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6;
+}
+
+.structure-analysis-tabs {
+  @apply flex space-x-1 border-b border-gray-200 dark:border-gray-700 mb-6;
+}
+
+.structure-analysis-tab {
+  @apply px-4 py-2 text-sm font-medium rounded-t-lg transition-colors duration-200
+         hover:bg-gray-100 dark:hover:bg-gray-700
+         focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-50;
+}
+
+.structure-analysis-tab.active {
+  @apply bg-blue-500 text-white;
+}
+
+.structure-analysis-tab.disabled {
+  @apply opacity-50 cursor-not-allowed;
+}
+
+.sequence-section {
+  @apply mb-6 bg-gray-50 dark:bg-gray-900 rounded-lg p-4;
+}
+
+.sequence-header {
+  @apply flex items-center justify-between mb-2;
+}
+
+.sequence-title {
+  @apply text-lg font-semibold text-gray-900 dark:text-gray-100;
+}
+
+.prediction-section {
+  @apply space-y-4;
+}
+
+.prediction-controls {
+  @apply flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-900 rounded-lg;
+}
+
+.prediction-mode-select {
+  @apply block w-40 rounded-md border-gray-300 dark:border-gray-600 
+         shadow-sm focus:border-blue-500 focus:ring-blue-500 
+         bg-white dark:bg-gray-700 text-sm;
+}
+
+.predict-button {
+  @apply inline-flex items-center px-4 py-2 border border-transparent 
+         text-sm font-medium rounded-md shadow-sm text-white 
+         bg-blue-600 hover:bg-blue-700 
+         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500
+         disabled:opacity-50 disabled:cursor-not-allowed;
+}
+
+.viewer-container {
+  @apply mt-6 border border-gray-200 dark:border-gray-700 rounded-lg overflow-hidden;
+  min-height: 400px;
+}
+
+.measurement-tools {
+  @apply mt-6 space-y-4;
+}
+
+.tool-button {
+  @apply inline-flex items-center px-3 py-1.5 border border-gray-300 
+         shadow-sm text-sm font-medium rounded-md text-gray-700 
+         bg-white hover:bg-gray-50 
+         focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500;
+}
+
+.measurement-display {
+  @apply p-4 bg-gray-50 dark:bg-gray-900 rounded-lg;
+}
+
+.error-container {
+  @apply mt-4;
+}
+
+/* Loading States */
+.loading-overlay {
+  @apply absolute inset-0 bg-white bg-opacity-75 dark:bg-gray-800 dark:bg-opacity-75
+         flex items-center justify-center;
+}
+
+/* Responsive Design */
+@media (max-width: 640px) {
+  .structure-analysis-panel {
+    @apply p-4;
+  }
+
+  .prediction-controls {
+    @apply flex-col items-stretch;
+  }
+
+  .prediction-mode-select {
+    @apply w-full;
+  }
+}
