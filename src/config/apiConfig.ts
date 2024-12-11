@@ -2,12 +2,16 @@ import { API_KEYS, getApiKeyHeader } from './apiKeys';
 
 export const API_CONFIG = {
   alphafold3: {
-    baseUrl: 'https://api.alphafold.ebi.ac.uk/v3',
+    baseUrl: 'https://api.alphafold.ebi.ac.uk/api',
     endpoints: {
       predict: '/prediction',
-      status: '/status',
-      result: '/result',
-      analyze: '/analysis'
+      structure: '/structure',
+      complex: '/complex',
+      interaction: '/interaction'
+    },
+    params: {
+      format: 'json',
+      version: '3'
     }
   },
   ncbi: {
@@ -23,37 +27,39 @@ export const API_CONFIG = {
       'api-key': import.meta.env.VITE_NCBI_API_KEY
     }
   },
-  arrayexpress: {
-    baseUrl: 'https://www.ebi.ac.uk/biostudies/api',
-    endpoints: {
-      search: '/v1/search',
-      details: '/v1/studies'
-    },
-    collection: 'ArrayExpress'
-  },
-  uniprot: {
-    baseUrl: 'https://rest.uniprot.org',
-    endpoints: {
-      search: '/uniprotkb/search',
-      entry: '/uniprotkb'
-    }
-  },
   geneExpression: {
     geo: {
       baseUrl: 'https://eutils.ncbi.nlm.nih.gov/entrez/eutils',
       endpoints: {
         search: '/esearch.fcgi',
         fetch: '/efetch.fcgi',
-        summary: '/esummary.fcgi',
-        link: '/elink.fcgi'
+        summary: '/esummary.fcgi'
       }
     },
-    arrayExpress: {
-      baseUrl: 'https://www.ebi.ac.uk/biostudies/api/v1',
+    biostudies: {
+      baseUrl: 'https://www.ebi.ac.uk/biostudies',
       endpoints: {
-        search: '/studies',
-        files: '/studies'
+        search: '/api/v1/search',
+        studies: '/api/v1/studies'
+      },
+      params: {
+        type: 'ArrayExpress',
+        pageSize: 10
       }
+    }
+  },
+  arrayexpress: {
+    baseUrl: 'https://www.ebi.ac.uk/biostudies',
+    endpoints: {
+      search: '/api/v1/search',
+      studies: '/api/v1/studies'
+    }
+  },
+  uniprot: {
+    baseUrl: 'https://rest.uniprot.org',
+    endpoints: {
+      search: '/uniprotkb/search',
+      entry: '/uniprotkb'
     }
   }
 } as const;

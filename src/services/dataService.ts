@@ -72,28 +72,56 @@ export class DataService {
     return response.data;
   }
 
+  // Gene Expression Data Fetching
+  static async searchGeneExpression(query: string, organism: string, experimentType: string) {
+    try {
+      // Search BioStudies/ArrayExpress
+      const bioStudiesResponse = await axios.get(
+        `${API_CONFIG.geneExpression.biostudies.baseUrl}${API_CONFIG.geneExpression.biostudies.endpoints.search}`,
+        {
+          params: {
+            query: query,
+            type: API_CONFIG.geneExpression.biostudies.params.type,
+            pageSize: API_CONFIG.geneExpression.biostudies.params.pageSize,
+            ...(organism && { organism }),
+            ...(experimentType && { experimentType })
+          }
+        }
+      );
+
+      // Search GEO
+      const geoResponse = await axios.get(
+        `${API_CONFIG.geneExpression.geo.baseUrl}${API_CONFIG.geneExpression.geo.endpoints.search}`,
+        {
+          params: {
+            db: 'gds',
+            term: `${query}[Gene] ${organism ? `AND "${organism}"[Organism]` : ''}`,
+            retmode: 'json',
+            retmax: '10'
+          }
+        }
+      );
+
+      return {
+        biostudies: bioStudiesResponse.data,
+        geo: geoResponse.data
+      };
+    } catch (error) {
+      console.error('Gene Expression search error:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Failed to search Gene Expression data';
+      throw new Error(errorMessage);
+    }
+  }
+
   // ArrayExpress Data Fetching
   static async searchArrayExpress(query: string) {
     try {
-      // First, try direct accession lookup
-      if (query.toUpperCase().startsWith('E-')) {
-        try {
-          const details = await this.getArrayExpressExperimentDetails(query);
-          return {
-            experiments: [details]
-          };
-        } catch (error) {
-          console.log('Direct accession lookup failed, trying search...');
-        }
-      }
-
-      // If direct lookup fails or it's not an accession number, try search
       const response = await axios.get(
         `${API_CONFIG.arrayexpress.baseUrl}${API_CONFIG.arrayexpress.endpoints.search}`,
         {
           params: {
             query: query,
-            collection: API_CONFIG.arrayexpress.collection,
+            type: 'ArrayExpress',
             pageSize: 10
           }
         }
@@ -106,7 +134,7 @@ export class DataService {
       return {
         experiments: response.data.hits.map((hit: any) => ({
           accession: hit.accession,
-          name: hit.title,
+          title: hit.title,
           description: hit.description || hit.summary,
           organism: hit.attributes?.organism || 'Not specified'
         }))
