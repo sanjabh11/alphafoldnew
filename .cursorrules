@@ -1,0 +1,8 @@
+IMPORTANT guidelines to be followed for EVERY code addtions or code fixing in the coversation- 
+
+1. need to enhence the working code to the next level, without distruping the working one. Most importantly before you fix issues have a look at the complete @codebase before you start making changes
+2. look carefully if that feature is already implemented, if so need not to craete duplicates. If you see the duplicacy, pls ensure to point out the ame and remove those. 
+3. Its important to ensure to update /implement the new or existing UI in every phase as you move on, so that i can test it as u make progress. 
+3. if u want to add or create or delete/duplicate any files do state the reasons clearly
+4. we need to pull actual data from the respective source website using API ONLY. no dummpy/mock data pls. 
+5. we will use the internal broweser based storage if needed. rest all will be API data fecting to serve the needs.

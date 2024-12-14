@@ -1,0 +1,57 @@
+.protein-data-panel {
+  padding: 20px;
+  background: #fff;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.protein-data-loading,
+.protein-data-error,
+.protein-data-message {
+  padding: 20px;
+  text-align: center;
+  border-radius: 8px;
+  background: #fff;
+  margin: 20px 0;
+}
+
+.protein-data-loading {
+  color: #666;
+}
+
+.protein-data-error {
+  color: #dc3545;
+  background: #fff;
+}
+
+.protein-data-message {
+  color: #666;
+}
+
+.data-content {
+  margin: 10px 0;
+  padding: 10px;
+  background: #f8f9fa;
+  border-radius: 4px;
+  overflow-x: auto;
+}
+
+.data-content pre {
+  margin: 0;
+  white-space: pre-wrap;
+  word-wrap: break-word;
+}
+
+section {
+  margin: 20px 0;
+}
+
+h2 {
+  color: #333;
+  margin-bottom: 20px;
+}
+
+h3 {
+  color: #666;
+  margin: 10px 0;
+} 
