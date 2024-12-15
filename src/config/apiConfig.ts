@@ -49,10 +49,16 @@ export const API_CONFIG = {
     }
   },
   arrayexpress: {
-    baseUrl: 'https://www.ebi.ac.uk/biostudies',
+    baseUrl: 'https://www.ebi.ac.uk/biostudies/api/v1',
+    legacyUrl: 'https://www.ebi.ac.uk/arrayexpress/json/v3',
     endpoints: {
-      search: '/api/v1/search',
-      studies: '/api/v1/studies'
+      search: '/search',
+      details: '/studies',
+      files: '/files'
+    },
+    params: {
+      type: 'ArrayExpress',
+      pageSize: 10
     }
   },
   uniprot: {

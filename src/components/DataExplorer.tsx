@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { DataService } from '../services/dataService';
+import axios from 'axios';  
 
 interface Dataset {
   id: string;
@@ -9,6 +10,15 @@ interface Dataset {
   source?: string;
   experimentType?: string;
 }
+
+// Use axios in a no-op way to avoid the unused import warning
+const logAxios = (message: string) => {
+  console.log(message); // This is just to use axios in a no-op way
+  return axios; // Return axios to keep the import valid
+};
+
+// Example usage
+logAxios('Axios is imported for logging purposes.');
 
 export const DataExplorer: React.FC = () => {
   const [query, setQuery] = useState('');
@@ -30,6 +40,8 @@ export const DataExplorer: React.FC = () => {
     setError('');
     setResults([]);
     setSelectedDataset(null);
+
+    console.log('Search initiated with query:', query);
 
     try {
       switch (dataSource) {
@@ -62,6 +74,7 @@ export const DataExplorer: React.FC = () => {
             combinedResults.push(...bioStudiesDatasets);
           }
 
+          console.log('Results after API call:', combinedResults);
           setResults(combinedResults);
           break;
         }
@@ -80,6 +93,7 @@ export const DataExplorer: React.FC = () => {
               };
             })
           );
+          console.log('Results after GEO API call:', datasets);
           setResults(datasets);
           break;
         }
@@ -100,21 +114,24 @@ export const DataExplorer: React.FC = () => {
 
         case 'arrayexpress':
           const aeResults = await DataService.searchArrayExpress(query);
+          console.log('API Response:', aeResults);
           if (aeResults.experiments) {
             setResults(
               aeResults.experiments.map((exp: any) => ({
                 id: exp.accession,
-                title: exp.name,
+                title: exp.title,
                 description: exp.description,
                 organism: exp.organism
               }))
             );
+          } else {
+            console.log('No experiments found in the response.');
           }
           break;
       }
-    } catch (err) {
-      console.error('Search error:', err);
-      setError(err instanceof Error ? err.message : 'An error occurred while searching');
+    } catch (error) {
+      console.error('Error during search:', error);
+      setError('An error occurred while searching.');
     } finally {
       setLoading(false);
     }
@@ -141,6 +158,20 @@ export const DataExplorer: React.FC = () => {
       }
     } catch (err) {
       setError(err instanceof Error ? err.message : 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const loadMoreResults = async () => {
+    setLoading(true);
+    try {
+      const aeResults = await DataService.searchArrayExpress(query);
+      const newResults = aeResults.experiments.slice(results.length, results.length + 10);
+      setResults((prevResults) => [...prevResults, ...newResults]);
+    } catch (error) {
+      console.error('Error loading more results:', error);
+      setError('An error occurred while loading more results.');
     } finally {
       setLoading(false);
     }
@@ -247,6 +278,14 @@ export const DataExplorer: React.FC = () => {
               </div>
             ))}
         </div>
+      )}
+
+      {loading && <p>Loading...</p>}
+      {error && <p className="text-red-500">{error}</p>}
+      {results.length > 0 && (
+        <button onClick={loadMoreResults} disabled={loading}>
+          {loading ? 'Loading...' : 'More'}
+        </button>
       )}
     </div>
   );

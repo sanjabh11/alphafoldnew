@@ -14,7 +14,7 @@ import { DataExplorer } from './components/DataExplorer';
 const queryClient = new QueryClient();
 
 export default function App() {
-  const [theme, setTheme] = useState('light');
+  const [theme, setTheme] = useState<'light' | 'dark'>('light');
   const [pdbData, setPdbData] = useState<string | null>(null);
   const [expressionData, setExpressionData] = useState<ProcessedData | null>(null);
   const [activeTab, setActiveTab] = useState<'structure' | 'expression'>('structure');

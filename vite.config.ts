@@ -26,6 +26,27 @@ export default defineConfig({
         ws: true,
         rewrite: (path) => path.replace(/^\/arrayexpress/, ''),
       },
+      "/api/proxy/arrayexpress": {
+        target: "https://www.ebi.ac.uk/arrayexpress/json/v3",
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api\/proxy\/arrayexpress/, ""),
+        headers: {
+          "Accept": "application/json",
+          "Origin": "http://localhost:5173"
+        },
+        configure: (proxy, _options) => {
+          proxy.on("error", (err, _req, _res) => {
+            console.log("proxy error", err);
+          });
+          proxy.on("proxyReq", (proxyReq, req, _res) => {
+            console.log("Sending Request to ArrayExpress:", req.method, req.url);
+          });
+          proxy.on("proxyRes", (proxyRes, req, _res) => {
+            console.log("Received Response from ArrayExpress:", proxyRes.statusCode, req.url);
+          });
+        }
+      },
     },
   },
 });

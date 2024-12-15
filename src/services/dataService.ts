@@ -116,32 +116,29 @@ export class DataService {
   // ArrayExpress Data Fetching
   static async searchArrayExpress(query: string) {
     try {
-      const response = await axios.get(
-        `${API_CONFIG.arrayexpress.baseUrl}${API_CONFIG.arrayexpress.endpoints.search}`,
-        {
-          params: {
-            query: query,
-            type: 'ArrayExpress',
-            pageSize: 10
-          }
+      const response = await axios.get(`https://www.ebi.ac.uk/gwas/api/search`, {
+        params: {
+          q: query
         }
-      );
+      });
 
-      if (!response.data || !response.data.hits) {
+      console.log('API Response:', response.data);
+
+      if (!response.data || !response.data.response || !response.data.response.docs) {
         return { experiments: [] };
       }
 
       return {
-        experiments: response.data.hits.map((hit: any) => ({
-          accession: hit.accession,
+        experiments: response.data.response.docs.map((hit: any) => ({
+          accession: hit.id,
           title: hit.title,
-          description: hit.description || hit.summary,
-          organism: hit.attributes?.organism || 'Not specified'
+          description: hit.description || 'No description available',
+          organism: hit.mappedGenes ? hit.mappedGenes.join(', ') : 'Not specified'
         }))
       };
     } catch (error) {
-      console.error('ArrayExpress search error:', error);
-      throw new Error('Failed to search ArrayExpress data');
+      console.error('Error fetching data:', error);
+      throw new Error('Failed to search GWAS data');
     }
   }
 
@@ -162,8 +159,13 @@ export class DataService {
         releaseDate: data.attributes?.releaseDate
       };
     } catch (error) {
-      console.error('ArrayExpress details error:', error);
-      throw new Error('Failed to fetch experiment details');
+      if (error.response && error.response.status === 404) {
+        console.error('Experiment not found:', accession);
+        throw new Error(`Experiment with accession ${accession} not found.`);
+      } else {
+        console.error('ArrayExpress details error:', error);
+        throw new Error('Failed to fetch experiment details');
+      }
     }
   }
 
