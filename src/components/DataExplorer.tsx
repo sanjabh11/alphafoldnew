@@ -29,6 +29,8 @@ export const DataExplorer: React.FC = () => {
   const [selectedDataset, setSelectedDataset] = useState<Dataset | null>(null);
   const [organism, setOrganism] = useState('');
   const [experimentType, setExperimentType] = useState('');
+  const [currentPage, setCurrentPage] = useState(1); // Current page
+  const resultsPerPage = 10; // Number of results per page
 
   const handleSearch = async () => {
     if (!query.trim()) {
@@ -39,9 +41,7 @@ export const DataExplorer: React.FC = () => {
     setLoading(true);
     setError('');
     setResults([]);
-    setSelectedDataset(null);
-
-    console.log('Search initiated with query:', query);
+    setCurrentPage(1); // Reset to the first page
 
     try {
       switch (dataSource) {
@@ -167,8 +167,9 @@ export const DataExplorer: React.FC = () => {
     setLoading(true);
     try {
       const aeResults = await DataService.searchArrayExpress(query);
-      const newResults = aeResults.experiments.slice(results.length, results.length + 10);
-      setResults((prevResults) => [...prevResults, ...newResults]);
+      const newResults = aeResults.experiments.slice(results.length, results.length + resultsPerPage);
+      setResults((prevResults) => [...prevResults, ...newResults]); // Append new results
+      setCurrentPage((prevPage) => prevPage + 1); // Increment the current page
     } catch (error) {
       console.error('Error loading more results:', error);
       setError('An error occurred while loading more results.');

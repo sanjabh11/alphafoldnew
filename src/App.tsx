@@ -10,6 +10,7 @@ import ProteinViewer from './components/ProteinViewer';
 import ExpressionAnalysisPanel from './components/ExpressionAnalysis/ExpressionAnalysisPanel';
 import { ProcessedData } from './utils/dataProcessing';
 import { DataExplorer } from './components/DataExplorer';
+import ExperimentExplorer from './pages/ExperimentExplorer';
 
 const queryClient = new QueryClient();
 
@@ -41,6 +42,7 @@ export default function App() {
               <Route path="/" element={<Home />} />
               <Route path="/search" element={<Search />} />
               <Route path="/protein/:id" element={<ProteinDetail />} />
+              <Route path="/experiments" element={<ExperimentExplorer />} />
             </Routes>
 
             <div className="bg-white rounded-lg shadow-lg overflow-hidden mt-6">
