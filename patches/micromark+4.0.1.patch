@@ -1,0 +1,10 @@
+diff --git a/node_modules/micromark/lib/create-tokenizer.js b/node_modules/micromark/lib/create-tokenizer.js
+index 4ce8eff..68ae726 100644
+--- a/node_modules/micromark/lib/create-tokenizer.js
++++ b/node_modules/micromark/lib/create-tokenizer.js
+@@ -1,4 +1,4 @@
+-/**
++import { debug } from 'debug';/**
+  * @import {
+  *   Chunk,
+  *   Code,

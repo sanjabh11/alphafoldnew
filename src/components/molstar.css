@@ -1,0 +1,13 @@
+.molstar-container {
+  position: relative;
+  width: 100%;
+  height: 600px;
+  background-color: #ffffff;
+}
+
+.molstar-controls {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: 1000;
+} 
